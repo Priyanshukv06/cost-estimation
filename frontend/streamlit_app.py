@@ -408,6 +408,9 @@ def main():
         unsafe_allow_html=True,
     )
 
+    # ── Load Field Options (cached) ───────────────────────────────────────────
+    field_options = fetch_field_options()
+
     # ── Sidebar ───────────────────────────────────────────────────────────────
     with st.sidebar:
         st.markdown("### ⚙️ Settings")
@@ -431,14 +434,29 @@ def main():
             if random_patient:
                 st.session_state["patient_data"] = random_patient
                 st.session_state["has_actuals"] = True
-                # Clear all cached widget keys so selectboxes re-init
-                # with the new patient's values on rerun
-                keys_to_delete = [
-                    k for k in st.session_state
-                    if k.startswith("field_")
-                ]
-                for k in keys_to_delete:
-                    del st.session_state[k]
+
+                # Directly SET each widget key to the new patient's value.
+                # This is the correct Streamlit pattern — on rerun, the
+                # selectbox reads its value from session_state[key], NOT
+                # from the index parameter.
+                for field_name in FIELD_LABELS:
+                    wkey = f"field_{field_name}"
+                    new_val = str(random_patient.get(field_name, ""))
+                    opts = field_options.get(field_name, [])
+                    if opts and new_val in opts:
+                        st.session_state[wkey] = new_val
+                    elif opts:
+                        st.session_state[wkey] = opts[0]
+
+                bw = random_patient.get("Birth Weight", 0)
+                try:
+                    st.session_state["field_birth_weight"] = float(bw)
+                except (ValueError, TypeError):
+                    st.session_state["field_birth_weight"] = 0.0
+
+                # Auto-predict after randomize
+                st.session_state["auto_predict"] = True
+
                 st.rerun()
 
         st.divider()
@@ -455,15 +473,13 @@ def main():
         st.caption("Built with FastAPI + scikit-learn")
         st.caption(f"Backend: `{API_BASE}`")
 
-    # ── Load Field Options ────────────────────────────────────────────────────
-    field_options = fetch_field_options()
+    # ── Guard: field options required ─────────────────────────────────────────
     if not field_options:
         st.warning("⏳ Loading field options from backend... If this persists, the server may be cold-starting (takes ~30-60s on free tier).")
         st.stop()
 
-    # ── Initialize Patient Data ───────────────────────────────────────────────
+    # ── Initialize defaults on first load ─────────────────────────────────────
     if "patient_data" not in st.session_state:
-        # Set initial defaults from first option of each field
         st.session_state["patient_data"] = {}
         st.session_state["has_actuals"] = False
 
@@ -473,10 +489,8 @@ def main():
     st.markdown('<div class="section-title">📋 Patient Information</div>', unsafe_allow_html=True)
     st.caption("Edit any field below or click **Randomize Patient** in the sidebar to load test data")
 
-    # Create input widgets in a 3-column grid
     cols_per_row = 3
     field_names = list(FIELD_LABELS.keys())
-
     current_values = {}
 
     for i in range(0, len(field_names), cols_per_row):
@@ -492,7 +506,8 @@ def main():
 
             with col:
                 if options:
-                    # Get default index from patient data
+                    # Compute initial index (only used on first render
+                    # when the key doesn't exist in session_state yet)
                     default_val = str(patient.get(field, ""))
                     default_idx = 0
                     if default_val in options:
@@ -512,7 +527,7 @@ def main():
                         key=f"field_{field}",
                     )
 
-    # Birth Weight (numeric)
+    # Birth Weight
     birth_weight = st.number_input(
         "Birth Weight (0 = N/A, -1 = Unknown)",
         value=float(patient.get("Birth Weight", 0)),
@@ -535,8 +550,8 @@ def main():
         if actual_charge is not None:
             api_payload["actual_total_charge"] = float(actual_charge)
 
-    # ── Predict Button ────────────────────────────────────────────────────────
-    st.markdown("")  # spacer
+    # ── Predict Button / Auto-predict ─────────────────────────────────────────
+    st.markdown("")
     predict_col1, predict_col2, predict_col3 = st.columns([1, 2, 1])
     with predict_col2:
         predict_clicked = st.button(
@@ -545,41 +560,53 @@ def main():
             type="primary",
         )
 
-    # ── Results ───────────────────────────────────────────────────────────────
-    if predict_clicked:
+    # Auto-predict flag set by Randomize
+    auto_predict = st.session_state.pop("auto_predict", False)
+    should_predict = predict_clicked or auto_predict
+
+    if should_predict:
         with st.spinner("Running predictions through both models..."):
             cost_result = predict("cost", api_payload, risk_level)
             charge_result = predict("charge", api_payload, risk_level)
 
-        if cost_result or charge_result:
+        # Store results in session_state so they persist across reruns
+        st.session_state["cost_result"] = cost_result
+        st.session_state["charge_result"] = charge_result
+
+    # ── Results (show if available) ───────────────────────────────────────────
+    cost_result = st.session_state.get("cost_result")
+    charge_result = st.session_state.get("charge_result")
+
+    if cost_result or charge_result:
+        st.markdown("---")
+        st.markdown('<div class="section-title">📊 Prediction Results</div>', unsafe_allow_html=True)
+
+        col_cost, col_charge = st.columns(2)
+
+        with col_cost:
+            render_prediction_result(cost_result, "cost")
+
+        with col_charge:
+            render_prediction_result(charge_result, "charge")
+
+        # Summary comparison
+        if cost_result and charge_result:
             st.markdown("---")
-            st.markdown('<div class="section-title">📊 Prediction Results</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-title">📈 Summary Comparison</div>', unsafe_allow_html=True)
 
-            col_cost, col_charge = st.columns(2)
-
-            with col_cost:
-                render_prediction_result(cost_result, "cost")
-
-            with col_charge:
-                render_prediction_result(charge_result, "charge")
-
-            # Summary comparison table
-            if cost_result and charge_result:
-                st.markdown("---")
-                st.markdown('<div class="section-title">📈 Summary Comparison</div>', unsafe_allow_html=True)
-
-                summary_cols = st.columns(4)
-                with summary_cols[0]:
-                    render_metric_card("Cost Estimate", f"${cost_result['predicted_amount']:,.2f}", "cost")
-                with summary_cols[1]:
-                    render_metric_card("Charge Estimate", f"${charge_result['predicted_amount']:,.2f}", "charge")
-                with summary_cols[2]:
-                    margin = charge_result['predicted_amount'] - cost_result['predicted_amount']
-                    render_metric_card("Estimated Margin", f"${margin:,.2f}", "")
-                with summary_cols[3]:
-                    margin_pct = (margin / charge_result['predicted_amount'] * 100) if charge_result['predicted_amount'] != 0 else 0
-                    render_metric_card("Margin %", f"{margin_pct:.1f}%", "")
+            summary_cols = st.columns(4)
+            with summary_cols[0]:
+                render_metric_card("Cost Estimate", f"${cost_result['predicted_amount']:,.2f}", "cost")
+            with summary_cols[1]:
+                render_metric_card("Charge Estimate", f"${charge_result['predicted_amount']:,.2f}", "charge")
+            with summary_cols[2]:
+                margin = charge_result['predicted_amount'] - cost_result['predicted_amount']
+                render_metric_card("Estimated Margin", f"${margin:,.2f}", "")
+            with summary_cols[3]:
+                margin_pct = (margin / charge_result['predicted_amount'] * 100) if charge_result['predicted_amount'] != 0 else 0
+                render_metric_card("Margin %", f"{margin_pct:.1f}%", "")
 
 
 if __name__ == "__main__":
     main()
+
