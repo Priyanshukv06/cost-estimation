@@ -302,8 +302,17 @@ def render_risk_bar(probability: float, label: str, color: str):
     """, unsafe_allow_html=True)
 
 
-def render_prediction_result(result: dict, model_type: str):
-    """Renders a prediction result card with all details."""
+def render_prediction_result(result: dict, model_type: str,
+                             show_actuals: bool = True,
+                             baseline_amount: float | None = None):
+    """Renders a prediction result card with all details.
+
+    Args:
+        result: prediction response dict from the API
+        model_type: 'cost' or 'charge'
+        show_actuals: whether to show actual values (False when user edited fields)
+        baseline_amount: original prediction amount for delta display
+    """
     if not result:
         return
 
@@ -322,23 +331,44 @@ def render_prediction_result(result: dict, model_type: str):
         css_class
     )
 
-    # Actual vs Predicted comparison
-    actual = result.get("actual_amount")
-    if actual is not None:
-        diff = amount - actual
-        diff_pct = (diff / actual * 100) if actual != 0 else 0
-        diff_color = "#ff7675" if diff > 0 else "#00b894"
-        diff_sign = "+" if diff > 0 else ""
+    # Delta from baseline (what-if analysis)
+    if baseline_amount is not None and baseline_amount != amount:
+        delta = amount - baseline_amount
+        delta_pct = (delta / baseline_amount * 100) if baseline_amount != 0 else 0
+        delta_color = "#ff7675" if delta > 0 else "#00b894"
+        delta_sign = "+" if delta > 0 else ""
+        arrow = "↑" if delta > 0 else "↓"
 
         st.markdown(f"""
-        <div class="metric-card">
-            <p class="metric-label">Actual {'Cost' if is_cost else 'Charge'}</p>
-            <p class="metric-value" style="color: #e0e0e8;">${actual:,.2f}</p>
-            <p style="color: {diff_color}; font-size: 0.9rem; margin-top: 4px; font-weight: 600;">
-                {diff_sign}${diff:,.2f} ({diff_sign}{diff_pct:.1f}%)
+        <div class="metric-card" style="border-left: 3px solid {delta_color};">
+            <p class="metric-label">Change from Original Patient</p>
+            <p style="font-size: 1.3rem; font-weight: 700; color: {delta_color}; margin: 4px 0;">
+                {arrow} {delta_sign}${abs(delta):,.2f}
+            </p>
+            <p style="color: #8a8a9a; font-size: 0.85rem; margin: 0;">
+                {delta_sign}{delta_pct:.1f}% &nbsp;|&nbsp; Baseline: ${baseline_amount:,.2f}
             </p>
         </div>
         """, unsafe_allow_html=True)
+
+    # Actual vs Predicted comparison (only for unmodified random data)
+    if show_actuals:
+        actual = result.get("actual_amount")
+        if actual is not None:
+            diff = amount - actual
+            diff_pct = (diff / actual * 100) if actual != 0 else 0
+            diff_color = "#ff7675" if diff > 0 else "#00b894"
+            diff_sign = "+" if diff > 0 else ""
+
+            st.markdown(f"""
+            <div class="metric-card">
+                <p class="metric-label">Actual {'Cost' if is_cost else 'Charge'}</p>
+                <p class="metric-value" style="color: #e0e0e8;">${actual:,.2f}</p>
+                <p style="color: {diff_color}; font-size: 0.9rem; margin-top: 4px; font-weight: 600;">
+                    {diff_sign}${diff:,.2f} ({diff_sign}{diff_pct:.1f}%)
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
 
     # Risk Assessment
     is_safe = result["is_safe"]
@@ -535,20 +565,43 @@ def main():
         key="field_birth_weight",
     )
 
+    # ── Detect Manual Edits ────────────────────────────────────────────────────
+    # Compare current widget values to stored patient_data to detect changes
+    fields_modified = False
+    changed_fields = []
+    if patient:  # only check if we have a randomized patient
+        for field in FIELD_LABELS:
+            original_val = str(patient.get(field, ""))
+            current_val = str(current_values.get(field, ""))
+            if original_val and current_val and original_val != current_val:
+                fields_modified = True
+                changed_fields.append(FIELD_LABELS[field])
+
+    # Show actuals only when patient data is unmodified
+    show_actuals = st.session_state.get("has_actuals", False) and not fields_modified
+
     # ── Build API Payload ─────────────────────────────────────────────────────
     api_payload = {}
     for field, api_name in FIELD_TO_API.items():
         api_payload[api_name] = current_values.get(field, "")
     api_payload["birth_weight"] = birth_weight
 
-    # Include actual values if available (from random patient)
-    if st.session_state.get("has_actuals"):
+    # Only include actual values when patient data hasn't been manually edited
+    if show_actuals:
         actual_cost = patient.get("Total Costs")
         actual_charge = patient.get("Total Charges")
         if actual_cost is not None:
             api_payload["actual_total_cost"] = float(actual_cost)
         if actual_charge is not None:
             api_payload["actual_total_charge"] = float(actual_charge)
+
+    # Show edit indicator
+    if fields_modified:
+        st.info(
+            f"✏️ **Modified fields:** {', '.join(changed_fields[:5])}"
+            + (f" +{len(changed_fields) - 5} more" if len(changed_fields) > 5 else "")
+            + " — Actuals hidden. Click Predict to see the impact."
+        )
 
     # ── Predict Button / Auto-predict ─────────────────────────────────────────
     st.markdown("")
@@ -573,9 +626,18 @@ def main():
         st.session_state["cost_result"] = cost_result
         st.session_state["charge_result"] = charge_result
 
+        # If this is an auto-predict (from Randomize), save as baseline
+        if auto_predict:
+            st.session_state["baseline_cost"] = cost_result["predicted_amount"] if cost_result else None
+            st.session_state["baseline_charge"] = charge_result["predicted_amount"] if charge_result else None
+
     # ── Results (show if available) ───────────────────────────────────────────
     cost_result = st.session_state.get("cost_result")
     charge_result = st.session_state.get("charge_result")
+
+    # Get baseline amounts for delta display (only show when fields modified)
+    baseline_cost = st.session_state.get("baseline_cost") if fields_modified else None
+    baseline_charge = st.session_state.get("baseline_charge") if fields_modified else None
 
     if cost_result or charge_result:
         st.markdown("---")
@@ -584,10 +646,18 @@ def main():
         col_cost, col_charge = st.columns(2)
 
         with col_cost:
-            render_prediction_result(cost_result, "cost")
+            render_prediction_result(
+                cost_result, "cost",
+                show_actuals=show_actuals,
+                baseline_amount=baseline_cost,
+            )
 
         with col_charge:
-            render_prediction_result(charge_result, "charge")
+            render_prediction_result(
+                charge_result, "charge",
+                show_actuals=show_actuals,
+                baseline_amount=baseline_charge,
+            )
 
         # Summary comparison
         if cost_result and charge_result:
