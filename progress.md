@@ -1,6 +1,6 @@
 # Project Progress - Cost & Charge Estimation Deployment
 
-## Current Status: ✅ Backend Deployed + Frontend Complete
+## Current Status: ✅ Backend Deployed + Frontend Complete + README Done
 
 ---
 
@@ -25,14 +25,24 @@
 |------|--------|-------|
 | Streamlit app structure | ✅ Done | frontend/streamlit_app.py |
 | Premium dark theme + custom CSS | ✅ Done | Gradient headers, Inter font, hover cards |
-| Randomize button for test data | ✅ Done | Loads random patient from /api/v1/data/random |
+| Randomize button for test data | ✅ Done | Loads random patient + auto-predicts |
 | Editable fields with dropdowns | ✅ Done | 17 categorical fields from /field-options |
 | Risk filter level selector | ✅ Done | Lenient → Aggressive presets |
 | Prediction results display | ✅ Done | Side-by-side cost + charge with risk bars |
-| Actual vs Predicted comparison | ✅ Done | Shows diff + percentage when actuals available |
+| What-if analysis (delta from baseline) | ✅ Done | Shows ↑/↓ change when user modifies fields |
+| Hide actuals on manual edit | ✅ Done | Actuals only shown for unmodified test data |
 | Backend connectivity status | ✅ Done | Shows "Connected — 8 models loaded" in sidebar |
-| Summary comparison cards | ✅ Done | Estimated margin + margin % |
+| GitHub link in sidebar | ✅ Done | Shield.io badge linking to repo |
+| Remove Birth Weight input | ✅ Done | Not used by model — confirmed via transformer code |
 | Deploy to Streamlit Cloud | ⬜ Pending | Push frontend/ to GitHub, connect to streamlit.io |
+
+## Phase 3: Portfolio Polish — ✅ COMPLETE
+
+| Task | Status | Notes |
+|------|--------|-------|
+| README.md | ✅ Done | Architecture, model pipeline, API docs, badges |
+| Training notebooks included | ✅ Done | train_notebooks/cost_final.ipynb, charge_final.ipynb |
+| GitHub badge in frontend | ✅ Done | Links to source code |
 
 ---
 
@@ -40,8 +50,3 @@
 - **Backend**: https://cost-estimation-9rhj.onrender.com
 - **API Docs**: https://cost-estimation-9rhj.onrender.com/docs
 - **Frontend**: Pending Streamlit Cloud deployment
-
-## Frontend Files
-- `frontend/streamlit_app.py` — Main Streamlit app
-- `frontend/requirements.txt` — Lightweight deps (streamlit, httpx, plotly)
-- `frontend/.streamlit/config.toml` — Dark theme configuration

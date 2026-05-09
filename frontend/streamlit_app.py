@@ -478,11 +478,7 @@ def main():
                     elif opts:
                         st.session_state[wkey] = opts[0]
 
-                bw = random_patient.get("Birth Weight", 0)
-                try:
-                    st.session_state["field_birth_weight"] = float(bw)
-                except (ValueError, TypeError):
-                    st.session_state["field_birth_weight"] = 0.0
+
 
                 # Auto-predict after randomize
                 st.session_state["auto_predict"] = True
@@ -499,7 +495,15 @@ def main():
         except Exception:
             st.error("Backend unreachable (may be cold-starting, wait ~30s)")
 
+
         st.divider()
+
+        # Portfolio / GitHub links
+        st.markdown("### 📂 Project")
+        st.markdown(
+            "[![GitHub](https://img.shields.io/badge/GitHub-Source_Code-181717?logo=github&style=for-the-badge)]"
+            "(https://github.com/Priyanshukv06/cost-estimation)"
+        )
         st.caption("Built with FastAPI + scikit-learn")
         st.caption(f"Backend: `{API_BASE}`")
 
@@ -557,13 +561,7 @@ def main():
                         key=f"field_{field}",
                     )
 
-    # Birth Weight
-    birth_weight = st.number_input(
-        "Birth Weight (0 = N/A, -1 = Unknown)",
-        value=float(patient.get("Birth Weight", 0)),
-        step=100.0,
-        key="field_birth_weight",
-    )
+
 
     # ── Detect Manual Edits ────────────────────────────────────────────────────
     # Compare current widget values to stored patient_data to detect changes
@@ -584,7 +582,7 @@ def main():
     api_payload = {}
     for field, api_name in FIELD_TO_API.items():
         api_payload[api_name] = current_values.get(field, "")
-    api_payload["birth_weight"] = birth_weight
+    api_payload["birth_weight"] = 0  # Not used by model, always default
 
     # Only include actual values when patient data hasn't been manually edited
     if show_actuals:

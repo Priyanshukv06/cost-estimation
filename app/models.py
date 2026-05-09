@@ -47,7 +47,7 @@ class PatientInput(BaseModel):
     apr_severity_of_illness_description: str = Field(..., description="APR Severity of Illness Description")
     apr_risk_of_mortality: str = Field(..., description="APR Risk of Mortality")
     apr_medical_surgical_description: str = Field(..., description="APR Medical Surgical Description")
-    birth_weight: float = Field(0, description="Birth Weight (0 if not applicable, -1 if unknown)")
+    birth_weight: float = Field(0, description="Birth Weight — not used by model, always defaults to 0")
     emergency_department_indicator: str = Field(..., description="Emergency Department Indicator (Y/N)")
 
     # Optional: actual values for comparison (populated from test data samples)
