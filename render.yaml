@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: hospital-cost-charge-estimator
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13"
