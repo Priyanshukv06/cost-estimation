@@ -431,6 +431,14 @@ def main():
             if random_patient:
                 st.session_state["patient_data"] = random_patient
                 st.session_state["has_actuals"] = True
+                # Clear all cached widget keys so selectboxes re-init
+                # with the new patient's values on rerun
+                keys_to_delete = [
+                    k for k in st.session_state
+                    if k.startswith("field_")
+                ]
+                for k in keys_to_delete:
+                    del st.session_state[k]
                 st.rerun()
 
         st.divider()
