@@ -11,7 +11,7 @@ import json
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 
-API_BASE = "https://cost-estimation-9rhj.onrender.com"
+API_BASE = "https://cost-estimation-g6ny.onrender.com"
 REQUEST_TIMEOUT = 60  # seconds (cold start can take up to 60s)
 
 # Risk filter presets with display labels
