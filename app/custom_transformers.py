@@ -47,7 +47,7 @@ class AutomatedFeatureEngineer(BaseEstimator, TransformerMixin):
         # Encoders
         self.ord_enc = OrdinalEncoder(
             handle_unknown='use_encoded_value', unknown_value=-1,
-            encoded_missing_value=-1, max_categories=250
+            encoded_missing_value=-1, max_categories=250  # pyrefly: ignore
         )
         self.cost_enc = TargetEncoder(smooth=50.0, target_type='continuous')
         self.charge_enc = TargetEncoder(smooth=50.0, target_type='continuous')
