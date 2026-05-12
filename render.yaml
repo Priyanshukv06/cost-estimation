@@ -7,3 +7,5 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.13"
+      - key: KEEP_ALIVE_INTERVAL_HOURS
+        value: "12"
