@@ -2,8 +2,8 @@
 
 > End-to-end ML system that predicts hospital inpatient discharge **costs** and **charges** using only admission-time parameters — before treatment begins.
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-Streamlit-FF4B4B?logo=streamlit&style=for-the-badge)](https://your-streamlit-url.streamlit.app)
-[![API](https://img.shields.io/badge/API-Render-46E3B7?logo=render&style=for-the-badge)](https://cost-estimation-9rhj.onrender.com/docs)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Streamlit-FF4B4B?logo=streamlit&style=for-the-badge)](https://cost-estimation-06.streamlit.app/)
+[![API](https://img.shields.io/badge/API-Render-46E3B7?logo=render&style=for-the-badge)](https://cost-estimation-g6ny.onrender.com/docs)
 [![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&style=flat-square)](https://python.org)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.8.0-F7931E?logo=scikit-learn&style=flat-square)](https://scikit-learn.org)
 
