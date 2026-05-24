@@ -803,22 +803,34 @@ def main():
                         
                 st.markdown("---")
                 st.markdown("### 🔑 Feature Importance (Top Drivers)")
-                st.caption("Derived via permutation importance from the dual risk classifiers.")
+                st.caption("Derived via permutation importance from the estimation regressors.")
                 
-                fi_under = stats.get("feature_importance", {}).get("under", {})
-                fi_over = stats.get("feature_importance", {}).get("over", {})
+                fi_v1 = stats.get("feature_importance", {}).get("v1", {})
+                fi_v2 = stats.get("feature_importance", {}).get("v2", {})
                 
-                fi_cols = st.columns(2)
-                with fi_cols[0]:
-                    st.markdown("**Drivers of Under-Prediction Risk**")
-                    if fi_under:
-                        df_fi_u = pd.DataFrame(list(fi_under.items()), columns=["Feature", "Importance"]).sort_values("Importance", ascending=True)
-                        st.bar_chart(df_fi_u.set_index("Feature"), horizontal=True, color="#ff7675")
-                with fi_cols[1]:
-                    st.markdown("**Drivers of Over-Prediction Risk**")
-                    if fi_over:
-                        df_fi_o = pd.DataFrame(list(fi_over.items()), columns=["Feature", "Importance"]).sort_values("Importance", ascending=True)
-                        st.bar_chart(df_fi_o.set_index("Feature"), horizontal=True, color="#00b894")
+                fi_toggle = st.radio(
+                    "Select Model for Feature Importance", 
+                    options=["V1 (History Based)", "V2 (Specialist Based)"], 
+                    horizontal=True,
+                    key="fi_toggle"
+                )
+                
+                if "V1" in fi_toggle:
+                    fi_data = fi_v1
+                    color = "#6c5ce7"
+                else:
+                    fi_data = fi_v2
+                    color = "#00cec9"
+                    
+                if fi_data:
+                    import altair as alt
+                    df_fi = pd.DataFrame(list(fi_data.items()), columns=["Feature", "Importance"])
+                    # Use Altair to ensure it's sorted visually descending (highest at top)
+                    chart = alt.Chart(df_fi).mark_bar(color=color).encode(
+                        x=alt.X("Importance:Q", title="Importance (MAE Impact)"),
+                        y=alt.Y("Feature:N", sort="-x", title="")
+                    ).properties(height=450)
+                    st.altair_chart(chart, use_container_width=True)
 
 
 if __name__ == "__main__":

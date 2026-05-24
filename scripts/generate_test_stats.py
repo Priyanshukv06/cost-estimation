@@ -185,23 +185,30 @@ def generate_stats_for_model(model_type, df):
                     "flipped_cases": n_flipped
                 })
                 
-    # Feature Importance (using permutation importance on a subset for speed)
-    print("Calculating feature importance (sample=5000)...")
-    sample_size = min(5000, len(X_hybrid))
-    sample_idx = np.random.choice(len(X_hybrid), sample_size, replace=False)
-    X_sample = X_hybrid.iloc[sample_idx]
-    y_u_sample = y_true_under[sample_idx]
-    y_o_sample = y_true_over[sample_idx]
+    # Feature Importance for Regressors (V1 and V2)
+    print("Calculating feature importance for V1 and V2 (sample=2500)...")
     
-    # Under model
-    res_under = permutation_importance(clf_under, X_sample, y_u_sample, n_repeats=3, random_state=42, scoring='f1', n_jobs=-1)
-    imp_u = pd.Series(res_under.importances_mean, index=X_hybrid.columns).sort_values(ascending=False).head(15)
-    stats["feature_importance"]["under"] = imp_u.to_dict()
+    from app.inference import FEATURE_COLUMNS
+    X_raw_features = df_clean[FEATURE_COLUMNS]
     
-    # Over model
-    res_over = permutation_importance(clf_over, X_sample, y_o_sample, n_repeats=3, random_state=42, scoring='f1', n_jobs=-1)
-    imp_o = pd.Series(res_over.importances_mean, index=X_hybrid.columns).sort_values(ascending=False).head(15)
-    stats["feature_importance"]["over"] = imp_o.to_dict()
+    # Use a smaller sample since pipelines are slower
+    sample_size = min(2500, len(X_raw_features))
+    sample_idx = np.random.choice(len(X_raw_features), sample_size, replace=False)
+    
+    X_sample_raw = X_raw_features.iloc[sample_idx]
+    y_true_sample = y_true[sample_idx]
+    
+    # V1 model
+    print("  -> V1 Model")
+    res_v1 = permutation_importance(model_v1, X_sample_raw, y_true_sample, n_repeats=3, random_state=42, scoring='neg_mean_absolute_error', n_jobs=-1)
+    imp_v1 = pd.Series(res_v1.importances_mean, index=FEATURE_COLUMNS).sort_values(ascending=False).head(15)
+    stats["feature_importance"]["v1"] = imp_v1.to_dict()
+    
+    # V2 model
+    print("  -> V2 Model")
+    res_v2 = permutation_importance(model_v2, X_sample_raw, y_true_sample, n_repeats=3, random_state=42, scoring='neg_mean_absolute_error', n_jobs=-1)
+    imp_v2 = pd.Series(res_v2.importances_mean, index=FEATURE_COLUMNS).sort_values(ascending=False).head(15)
+    stats["feature_importance"]["v2"] = imp_v2.to_dict()
     
     return stats
 
