@@ -370,15 +370,38 @@ def render_prediction_result(result: dict, model_type: str,
             </div>
             """, unsafe_allow_html=True)
 
-    # Risk Assessment
+    # Dynamic Risk Assessment
+    def get_risk_details(prob, thresh):
+        if prob >= thresh:
+            return 4, "🔴 CRITICAL", "#ff4757" # Red
+        elif prob >= thresh - 0.10:
+            return 3, "🟠 HIGH", "#ffa502" # Orange
+        elif prob >= thresh - 0.20:
+            return 2, "🟡 MEDIUM", "#eccc68" # Yellow
+        else:
+            return 1, "🟢 LOW", "#2ed573" # Green
+
+    prob_u = result["risk_probability_under"]
+    prob_o = result["risk_probability_over"]
+    thresholds = result.get("risk_thresholds_used", {})
+    thresh_u = thresholds.get('under', 0.5)
+    thresh_o = thresholds.get('over', 0.5)
+
+    score_u, text_u, color_u = get_risk_details(prob_u, thresh_u)
+    score_o, text_o, color_o = get_risk_details(prob_o, thresh_o)
+
+    if score_u >= score_o:
+        overall_text = text_u
+        overall_color = color_u
+    else:
+        overall_text = text_o
+        overall_color = color_o
+
+    # A prediction is "safe" according to the backend if both probabilities are below their thresholds
     is_safe = result["is_safe"]
-    confidence = result["confidence_level"]
 
     badge_class = "badge-safe" if is_safe else "badge-risky"
     status_text = "SAFE — Cleared Risk Filters" if is_safe else "RISKY — Flagged by Risk Filters"
-
-    conf_class = f"confidence-{confidence.lower()}"
-    conf_emoji = {"HIGH": "🟢", "MEDIUM": "🟡", "LOW": "🔴"}.get(confidence, "⚪")
 
     st.markdown(f"""
     <div class="metric-card">
@@ -387,7 +410,7 @@ def render_prediction_result(result: dict, model_type: str,
             <span class="badge {badge_class}">{status_text}</span>
         </div>
         <p style="margin-top: 12px; font-size: 0.85rem;">
-            Confidence: <span class="{conf_class}" style="font-weight: 600;">{conf_emoji} {confidence}</span>
+            Risk Factor: <span style="color: {overall_color}; font-weight: 800; letter-spacing: 0.5px;">{overall_text}</span>
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -398,21 +421,12 @@ def render_prediction_result(result: dict, model_type: str,
         <p class="metric-label">Risk Probabilities</p>
     """, unsafe_allow_html=True)
 
-    render_risk_bar(
-        result["risk_probability_under"],
-        "Under-prediction Risk",
-        "#fdcb6e" if result["risk_probability_under"] < 0.5 else "#ff7675"
-    )
-    render_risk_bar(
-        result["risk_probability_over"],
-        "Over-prediction Risk",
-        "#fdcb6e" if result["risk_probability_over"] < 0.5 else "#ff7675"
-    )
+    render_risk_bar(prob_u, "Under-prediction Risk", color_u)
+    render_risk_bar(prob_o, "Over-prediction Risk", color_o)
 
-    thresholds = result.get("risk_thresholds_used", {})
     st.markdown(f"""
         <p style="color: #606070; font-size: 0.75rem; margin-top: 8px;">
-            Thresholds: Under={thresholds.get('under', 'N/A')}, Over={thresholds.get('over', 'N/A')}
+            Thresholds: Under={thresh_u}, Over={thresh_o}
             ({result.get('risk_filter_level', 'balanced')})
         </p>
     </div>
@@ -458,6 +472,13 @@ def main():
                 help="Controls how strictly the model flags risky predictions. Lenient = fewer flags, Aggressive = more flags.",
             )
             risk_level = FILTER_LEVELS[filter_label]
+            
+            # Trigger prediction automatically when risk filter changes
+            if "last_risk_level" not in st.session_state:
+                st.session_state["last_risk_level"] = risk_level
+            elif st.session_state["last_risk_level"] != risk_level:
+                st.session_state["auto_predict"] = True
+                st.session_state["last_risk_level"] = risk_level
 
             st.divider()
 
