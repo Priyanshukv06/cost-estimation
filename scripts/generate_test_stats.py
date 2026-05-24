@@ -25,6 +25,7 @@ OUTPUT_FILE = os.path.join(PROJECT_ROOT, "data_sample", "test_stats.json")
 
 # Threshold presets mapped exactly from app/models.py
 COST_THRESHOLDS = {
+    "no filter": (1.01, 1.01),
     "lenient": (0.70, 0.95),
     "moderate": (0.65, 0.90),
     "balanced": (0.60, 0.85),
@@ -33,6 +34,7 @@ COST_THRESHOLDS = {
 }
 
 CHARGE_THRESHOLDS = {
+    "no filter": (1.01, 1.01),
     "lenient": (0.70, 0.85),
     "moderate": (0.65, 0.80),
     "balanced": (0.60, 0.75),

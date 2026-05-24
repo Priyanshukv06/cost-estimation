@@ -621,6 +621,16 @@
       }
     },
     "threshold_stats": {
+      "no filter": {
+        "threshold_u": 1.01,
+        "threshold_o": 1.01,
+        "filtering_pct": 0.0,
+        "overall_mae": 11106.790577454303,
+        "under_pct": 41.21330110034301,
+        "over_pct": 58.78669889965698,
+        "under_mae": 16240.421744681895,
+        "over_mae": 7507.781090730248
+      },
       "lenient": {
         "threshold_u": 0.7,
         "threshold_o": 0.95,
@@ -673,6 +683,62 @@
       }
     },
     "buffer_stats": {
+      "no filter": [
+        {
+          "buffer": 0,
+          "overall_mae": 11106.790577454303,
+          "under_pct": 41.21330110034301,
+          "under_mae": 16240.421744681895,
+          "over_pct": 58.78669889965698,
+          "over_mae": 7507.781090730248,
+          "flipped_cases": 0
+        },
+        {
+          "buffer": 2000,
+          "overall_mae": 11287.9894547833,
+          "under_pct": 36.579927594624984,
+          "under_mae": 17327.099332912163,
+          "over_pct": 63.420072405375016,
+          "over_mae": 7804.704215594333,
+          "flipped_cases": 19492
+        },
+        {
+          "buffer": 5000,
+          "overall_mae": 11685.95797189676,
+          "under_pct": 30.593529155880738,
+          "under_mae": 19183.35467550957,
+          "over_pct": 69.40647084411926,
+          "over_mae": 8381.196587899416,
+          "flipped_cases": 44676
+        },
+        {
+          "buffer": 7500,
+          "overall_mae": 12117.481673494705,
+          "under_pct": 26.58983995226855,
+          "under_mae": 20788.620254587662,
+          "over_pct": 73.41016004773145,
+          "over_mae": 8976.714960477195,
+          "flipped_cases": 61519
+        },
+        {
+          "buffer": 10000,
+          "overall_mae": 12623.771028127456,
+          "under_pct": 23.26955670130049,
+          "under_mae": 22449.242999360213,
+          "over_pct": 76.73044329869951,
+          "over_mae": 9644.062227780745,
+          "flipped_cases": 75487
+        },
+        {
+          "buffer": 15000,
+          "overall_mae": 13819.25074698865,
+          "under_pct": 18.24824632089891,
+          "under_mae": 25797.803801527312,
+          "over_pct": 81.75175367910109,
+          "over_mae": 11145.45383291637,
+          "flipped_cases": 96611
+        }
+      ],
       "lenient": [
         {
           "buffer": 0,
@@ -956,38 +1022,38 @@
     },
     "feature_importance": {
       "under": {
-        "PRED_M1_DIRTY": 0.052486481709262435,
-        "PRED_M2_CLEAN": 0.027455396430966634,
-        "CCSR Diagnosis Description_DIH_M1_HIST": 0.004191131658942822,
-        "APR Medical Surgical Description": 0.002925024178291417,
-        "Facility Name": 0.001544281093142974,
-        "Patient Disposition": 0.001509481191090567,
-        "CCSR Procedure Description_MEDIAN_COST": 0.0012688803975225797,
-        "APR Severity of Illness Description": 0.001142871540227704,
-        "CCSR Diagnosis Description_DIH": 0.0010428611541865955,
-        "CCSR Diagnosis Description_MEDIAN_COST": 0.0008809628043256837,
-        "APR DRG Description_DIH_M1_HIST": 0.0008265099732968628,
-        "CCSR Procedure Description_DIH_M1_HIST": 0.0008102732158385232,
-        "Type of Admission": 0.000520795722713611,
-        "APR DRG Description_DIH": 0.0004354973168958313,
-        "CCSR Diagnosis Description_MEDIAN_COST_M1_HIST": 0.00027627749352014214
+        "PRED_M1_DIRTY": 0.06261113913718726,
+        "PRED_M2_CLEAN": 0.033421278912005116,
+        "APR DRG Description_DIH_M1_HIST": 0.0021318478404179033,
+        "Facility Name": 0.00176480449877231,
+        "CCSR Diagnosis Description_DIH_M1_HIST": 0.0016356887711597896,
+        "APR Medical Surgical Description": 0.0014912735882396944,
+        "CCSR Procedure Description_MEDIAN_COST": 0.001027680131672278,
+        "APR Severity of Illness Description": 0.0008936717858628781,
+        "CCSR Diagnosis Description_MEDIAN_COST": 0.0005815542068807189,
+        "PRED_DIFF": 0.0005300965526853404,
+        "Type of Admission": 0.0004923205309549558,
+        "CCSR Procedure Description_DIH_M1_HIST": 0.000358123317854749,
+        "Patient Disposition": 0.00026873392728510304,
+        "Age Group": 8.082682377101118e-08,
+        "CCSR Procedure Description_MEDIAN_COST_M1_HIST": 0.0
       },
       "over": {
-        "PRED_M2_CLEAN": 0.10380129231487256,
-        "PRED_DIFF": 0.0055323071826636205,
-        "APR DRG Description_MEDIAN_COST": 0.005461374460658919,
-        "Emergency Department Indicator": 0.004097186008397535,
-        "Age Group": 0.003485861979740157,
-        "APR Severity of Illness Description": 0.002852632189780898,
-        "Patient Disposition": 0.0024879410819050505,
-        "CCSR Procedure Description_MEDIAN_COST": 0.002447235151408248,
-        "APR MDC Description": 0.0022413700108127044,
-        "APR Medical Surgical Description": 0.002050190372273238,
-        "APR DRG Description_DIH": 0.0018617551250997844,
-        "Hospital County": 0.0015311391815238107,
-        "Facility Name": 0.0012968466980848858,
-        "CCSR Diagnosis Description_DIH": 0.0008701334520637705,
-        "CCSR Diagnosis Description_MEDIAN_COST_M1_HIST": 0.0007114290999598779
+        "PRED_M2_CLEAN": 0.10110437476569083,
+        "PRED_DIFF": 0.0045269317327999254,
+        "Age Group": 0.0038779055017001776,
+        "Facility Name": 0.002956084113801586,
+        "Emergency Department Indicator": 0.002062555681846675,
+        "APR DRG Description_MEDIAN_COST": 0.001984968328117546,
+        "Hospital County": 0.00147445546406418,
+        "CCSR Procedure Description_MEDIAN_COST": 0.000738646947983738,
+        "CCSR Diagnosis Description_MEDIAN_COST": 0.0005179070630320451,
+        "APR MDC Description": 0.0004423540912396791,
+        "Race": 0.0003702004832550713,
+        "APR Risk of Mortality": 0.0002954111941161723,
+        "Type of Admission": 7.412816427685802e-05,
+        "Gender": 0.0,
+        "Ethnicity": -7.720066666679534e-07
       }
     }
   },
@@ -1613,6 +1679,16 @@
       }
     },
     "threshold_stats": {
+      "no filter": {
+        "threshold_u": 1.01,
+        "threshold_o": 1.01,
+        "filtering_pct": 0.0,
+        "overall_mae": 34903.81421518783,
+        "under_pct": 43.741546565498815,
+        "over_pct": 56.258453434501185,
+        "under_mae": 48314.02076739001,
+        "over_mae": 24477.235833700008
+      },
       "lenient": {
         "threshold_u": 0.7,
         "threshold_o": 0.85,
@@ -1665,6 +1741,62 @@
       }
     },
     "buffer_stats": {
+      "no filter": [
+        {
+          "buffer": 0,
+          "overall_mae": 34903.81421518783,
+          "under_pct": 43.741546565498815,
+          "under_mae": 48314.02076739001,
+          "over_pct": 56.258453434501185,
+          "over_mae": 24477.235833700008,
+          "flipped_cases": 0
+        },
+        {
+          "buffer": 2000,
+          "overall_mae": 34970.456642522644,
+          "under_pct": 42.58558025325242,
+          "under_mae": 48727.502607776776,
+          "over_pct": 57.41441974674758,
+          "over_mae": 24766.542929117928,
+          "flipped_cases": 4863
+        },
+        {
+          "buffer": 5000,
+          "overall_mae": 35107.265561889195,
+          "under_pct": 40.86886450021037,
+          "under_mae": 49415.85084344664,
+          "over_pct": 59.131135499789636,
+          "over_mae": 25217.794843645406,
+          "flipped_cases": 12085
+        },
+        {
+          "buffer": 7500,
+          "overall_mae": 35254.5248967588,
+          "under_pct": 39.503954246268606,
+          "under_mae": 49994.14095630695,
+          "over_pct": 60.496045753731394,
+          "over_mae": 25629.54674869461,
+          "flipped_cases": 17827
+        },
+        {
+          "buffer": 10000,
+          "overall_mae": 35430.66051252208,
+          "under_pct": 38.18468362464255,
+          "under_mae": 50591.138441526,
+          "over_pct": 61.815316375357455,
+          "over_mae": 26065.69908771623,
+          "flipped_cases": 23377
+        },
+        {
+          "buffer": 15000,
+          "overall_mae": 35866.977013260264,
+          "under_pct": 35.62862650854436,
+          "under_mae": 51915.82661707647,
+          "over_pct": 64.37137349145564,
+          "over_mae": 26984.170302571303,
+          "flipped_cases": 34130
+        }
+      ],
       "lenient": [
         {
           "buffer": 0,
@@ -1948,38 +2080,38 @@
     },
     "feature_importance": {
       "under": {
-        "PRED_M1_DIRTY": 0.08979675893822851,
-        "APR DRG Description_MEDIAN_COST": 0.010018962856038982,
-        "CCSR Diagnosis Description_MEDIAN_COST": 0.00511921568501648,
-        "CCSR Procedure Description_MEDIAN_COST": 0.0029974783375290768,
-        "APR DRG Description_MEDIAN_COST_M1_HIST": 0.0019654753899998045,
-        "CCSR Diagnosis Description_DIH": 0.001669924524302202,
-        "Emergency Department Indicator": 0.0016487398803205118,
-        "APR Severity of Illness Description": 0.0016257856230833534,
-        "Facility Name": 0.001510143212388848,
-        "APR DRG Description_DIH": 0.0010743790162018318,
-        "Type of Admission": 0.0009964820376207606,
-        "CCSR Procedure Description_MEDIAN_COST_M1_HIST": 0.0008980491654514422,
-        "CCSR Procedure Description_DIH_M1_HIST": 0.0004973101122331217,
-        "APR Medical Surgical Description": 0.00022129859441860633,
-        "Ethnicity": -3.999341569358809e-05
+        "PRED_M1_DIRTY": 0.09376970932402844,
+        "APR DRG Description_MEDIAN_COST": 0.007417301763976462,
+        "CCSR Procedure Description_MEDIAN_COST": 0.0021429737923335614,
+        "Type of Admission": 0.0015630281912525912,
+        "Age Group": 0.0009515578749231257,
+        "APR DRG Description_DIH": 0.0008279349989539683,
+        "CCSR Procedure Description_DIH_M1_HIST": 0.0005876861864478333,
+        "CCSR Diagnosis Description_MEDIAN_COST": 0.0005607171957089374,
+        "Emergency Department Indicator": 0.0004339343448904742,
+        "Gender": 7.831996743501435e-05,
+        "PRED_DIFF": 9.858990954754917e-06,
+        "CCSR Diagnosis Description_MEDIAN_COST_M1_HIST": -6.945392609369883e-07,
+        "Ethnicity": -0.00011774796625019235,
+        "CCSR Diagnosis Description_DIH_M1_HIST": -0.00041802629412805253,
+        "APR Severity of Illness Description": -0.0006040701488475945
       },
       "over": {
-        "PRED_M2_CLEAN": 0.13620287337979037,
-        "Emergency Department Indicator": 0.010046658228712646,
-        "Facility Name": 0.007572897775611968,
-        "Age Group": 0.006785724902624653,
-        "PRED_DIFF": 0.005660402656314882,
-        "APR MDC Description": 0.005323119470380222,
-        "CCSR Diagnosis Description_MEDIAN_COST": 0.004726042920192038,
-        "Hospital County": 0.003921198242366271,
-        "Type of Admission": 0.003057268493221965,
-        "APR DRG Description_DIH_M1_HIST": 0.0029732555322356156,
-        "CCSR Diagnosis Description_DIH": 0.0025169361910478694,
-        "CCSR Diagnosis Description_MEDIAN_COST_M1_HIST": 0.0012959127432028428,
-        "APR Risk of Mortality": 0.0005455475126524001,
-        "Hospital Service Area": 0.000380755335865494,
-        "APR DRG Description_MEDIAN_COST": 0.0002709953467793606
+        "PRED_M2_CLEAN": 0.09811749089647892,
+        "Emergency Department Indicator": 0.01213864199208122,
+        "Age Group": 0.007207579496811815,
+        "Facility Name": 0.003914579201946877,
+        "APR DRG Description_DIH_M1_HIST": 0.003412212027713857,
+        "PRED_DIFF": 0.0024547811978907394,
+        "APR MDC Description": 0.002137856331679603,
+        "Hospital County": 0.0014417033016377867,
+        "CCSR Diagnosis Description_DIH": 0.001271831984435201,
+        "CCSR Diagnosis Description_MEDIAN_COST": 0.001120896100436919,
+        "Type of Admission": 0.0008679762326739097,
+        "APR DRG Description_MEDIAN_COST": 0.00017256782207560514,
+        "Ethnicity": 0.0,
+        "Gender": 0.0,
+        "Race": 0.0
       }
     }
   }

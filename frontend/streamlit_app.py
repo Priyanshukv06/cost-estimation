@@ -441,72 +441,78 @@ def main():
     # ── Load Field Options (cached) ───────────────────────────────────────────
     field_options = fetch_field_options()
 
-    # ── Sidebar ───────────────────────────────────────────────────────────────
-    with st.sidebar:
-        st.markdown("### ⚙️ Settings")
+    # Navigation
+    app_mode = st.radio("Navigation", ["Patient Evaluation", "Model Monitoring"], horizontal=True, label_visibility="collapsed")
+    st.divider()
 
-        # Risk filter selector
-        filter_label = st.selectbox(
-            "Risk Filter Level",
-            options=list(FILTER_LEVELS.keys()),
-            index=2,  # Default: Balanced
-            help="Controls how strictly the model flags risky predictions. Lenient = fewer flags, Aggressive = more flags.",
-        )
-        risk_level = FILTER_LEVELS[filter_label]
+    if app_mode == "Patient Evaluation":
+        # ── Sidebar ───────────────────────────────────────────────────────────────
+        with st.sidebar:
+            st.markdown("### ⚙️ Settings")
 
-        st.divider()
+            # Risk filter selector
+            filter_label = st.selectbox(
+                "Risk Filter Level",
+                options=list(FILTER_LEVELS.keys()),
+                index=2,  # Default: Balanced
+                help="Controls how strictly the model flags risky predictions. Lenient = fewer flags, Aggressive = more flags.",
+            )
+            risk_level = FILTER_LEVELS[filter_label]
 
-        # Randomize button
-        st.markdown("### 🎲 Sample Data")
-        st.caption("Load a random patient from the test dataset")
-        if st.button("🔀 Randomize Patient", use_container_width=True, type="primary"):
-            random_patient = fetch_random_patient()
-            if random_patient:
-                st.session_state["patient_data"] = random_patient
-                st.session_state["has_actuals"] = True
+            st.divider()
 
-                # Directly SET each widget key to the new patient's value.
-                # This is the correct Streamlit pattern — on rerun, the
-                # selectbox reads its value from session_state[key], NOT
-                # from the index parameter.
-                for field_name in FIELD_LABELS:
-                    wkey = f"field_{field_name}"
-                    new_val = str(random_patient.get(field_name, ""))
-                    opts = field_options.get(field_name, [])
-                    if opts and new_val in opts:
-                        st.session_state[wkey] = new_val
-                    elif opts:
-                        st.session_state[wkey] = opts[0]
+            # Randomize button
+            st.markdown("### 🎲 Sample Data")
+            st.caption("Load a random patient from the test dataset")
+            if st.button("🔀 Randomize Patient", use_container_width=True, type="primary"):
+                random_patient = fetch_random_patient()
+                if random_patient:
+                    st.session_state["patient_data"] = random_patient
+                    st.session_state["has_actuals"] = True
 
+                    # Directly SET each widget key to the new patient's value.
+                    for field_name in FIELD_LABELS:
+                        wkey = f"field_{field_name}"
+                        new_val = str(random_patient.get(field_name, ""))
+                        opts = field_options.get(field_name, [])
+                        if opts and new_val in opts:
+                            st.session_state[wkey] = new_val
+                        elif opts:
+                            st.session_state[wkey] = opts[0]
 
+                    # Auto-predict after randomize
+                    st.session_state["auto_predict"] = True
+                    st.rerun()
 
-                # Auto-predict after randomize
-                st.session_state["auto_predict"] = True
+            st.divider()
 
-                st.rerun()
+            # Backend status
+            st.markdown("### 📡 Backend Status")
+            try:
+                health = httpx.get(f"{API_BASE}/health", timeout=10).json()
+                st.success(f"Connected — {health.get('cost_models_count', 0) + health.get('charge_models_count', 0)} models loaded")
+            except Exception:
+                st.error("Backend unreachable (may be cold-starting, wait ~30s)")
 
-        st.divider()
+            st.divider()
 
-        # Backend status
-        st.markdown("### 📡 Backend Status")
-        try:
-            health = httpx.get(f"{API_BASE}/health", timeout=10).json()
-            st.success(f"Connected — {health.get('cost_models_count', 0) + health.get('charge_models_count', 0)} models loaded")
-        except Exception:
-            st.error("Backend unreachable (may be cold-starting, wait ~30s)")
-
-
-        st.divider()
-
-        # Portfolio / GitHub links
-        st.markdown("### 📂 Project")
+            # Portfolio / GitHub links
+            st.markdown("### 📂 Project")
+            st.markdown(
+                "[![GitHub](https://img.shields.io/badge/GitHub-Source_Code-181717?logo=github&style=for-the-badge)]"
+                "(https://github.com/Priyanshukv06/cost-estimation)"
+            )
+            st.caption("Built with FastAPI + scikit-learn")
+            st.caption(f"Backend: `{API_BASE}`")
+    else:
+        # Provide dummy risk_level just in case, though it's not used in Monitoring tab
+        risk_level = "balanced"
+        
+        # Hide the sidebar completely in Model Monitoring tab using CSS
         st.markdown(
-            "[![GitHub](https://img.shields.io/badge/GitHub-Source_Code-181717?logo=github&style=for-the-badge)]"
-            "(https://github.com/Priyanshukv06/cost-estimation)"
+            '<style>[data-testid="stSidebar"] {display: none;}</style>',
+            unsafe_allow_html=True,
         )
-        st.caption("Built with FastAPI + scikit-learn")
-        st.caption(f"Backend: `{API_BASE}`")
-
     # ── Guard: field options required ─────────────────────────────────────────
     if not field_options:
         st.warning("⏳ Loading field options from backend... If this persists, the server may be cold-starting (takes ~30-60s on free tier).")
@@ -519,8 +525,8 @@ def main():
 
     patient = st.session_state.get("patient_data", {})
 
-    tab1, tab2 = st.tabs(["Patient Evaluation", "Model Monitoring"])
-    with tab1:
+    if app_mode == "Patient Evaluation":
+        pass # Used to be tab1
         # ── Patient Input Form ────────────────────────────────────────────────────
         st.markdown('<div class="section-title">📋 Patient Information</div>', unsafe_allow_html=True)
         st.caption("Edit any field below or click **Randomize Patient** in the sidebar to load test data")
@@ -675,7 +681,7 @@ def main():
                 with summary_cols[3]:
                     margin_pct = (margin / charge_result['predicted_amount'] * 100) if charge_result['predicted_amount'] != 0 else 0
                     render_metric_card("Margin %", f"{margin_pct:.1f}%", "")
-    with tab2:
+    elif app_mode == "Model Monitoring":
         st.markdown('<div class="section-title">🔍 Model Monitoring & Test Statistics</div>', unsafe_allow_html=True)
         st.caption("Insights based on the full external test dataset.")
         
@@ -704,38 +710,47 @@ def main():
                 
                 # Format threshold labels
                 thresh_stats = stats.get("threshold_stats", {})
+                
+                # Render table with all presets
+                import pandas as pd
+                
+                table_rows = []
+                for level, data in thresh_stats.items():
+                    table_rows.append({
+                        "Preset": level.capitalize(),
+                        "U-Thresh": f"{data['threshold_u']:.2f}",
+                        "O-Thresh": f"{data['threshold_o']:.2f}",
+                        "Filtered %": f"{data['filtering_pct']:.1f}%",
+                        "Overall MAE": f"${data['overall_mae']:,.0f}",
+                        "Under-Pred %": f"{data['under_pct']:.1f}%",
+                        "Under MAE": f"${data['under_mae']:,.0f}",
+                        "Over-Pred %": f"{data['over_pct']:.1f}%",
+                        "Over MAE": f"${data['over_mae']:,.0f}"
+                    })
+                    
+                df_thresh = pd.DataFrame(table_rows)
+                # Sort putting No Filter first, then Aggressive, Cautious, Balanced, Moderate, Lenient.
+                # Actually, threshold_u increases, so let's just sort by U-Thresh
+                df_thresh = df_thresh.sort_values(by="U-Thresh", ascending=False)
+                st.dataframe(df_thresh, use_container_width=True, hide_index=True)
+                
+                st.markdown("---")
+                st.markdown("### 🛡️ Buffer Strategy Analysis (Under-Prediction Risk Only)")
+                
                 thresh_options = []
                 for level, data in thresh_stats.items():
                     label = f"{level.capitalize()} (U: {data['threshold_u']:.2f}, O: {data['threshold_o']:.2f})"
                     thresh_options.append((level, label))
                     
                 selected_label = st.selectbox(
-                    "Select Risk Threshold Preset", 
+                    "Select Risk Threshold Preset for Buffer Analysis", 
                     [lbl for _, lbl in thresh_options],
-                    index=2 # Default to Balanced
+                    index=3 # Default to Balanced assuming No Filter is now 0
                 )
                 selected_level = next(lvl for lvl, lbl in thresh_options if lbl == selected_label)
                 
-                # Show threshold stats
-                ts = thresh_stats[selected_level]
-                
-                t_cols = st.columns(4)
-                with t_cols[0]:
-                    render_metric_card("Filtered (Rejected)", f"{ts['filtering_pct']:.1f}%", "risky")
-                with t_cols[1]:
-                    render_metric_card("Overall MAE", f"${ts['overall_mae']:,.0f}", "cost" if mt == "cost" else "charge")
-                with t_cols[2]:
-                    render_metric_card("Under-Predictions", f"{ts['under_pct']:.1f}%", "risky")
-                with t_cols[3]:
-                    render_metric_card("Over-Predictions", f"{ts['over_pct']:.1f}%", "safe")
-                    
-                st.markdown(f"**Average Deficit (Under MAE):** ${ts['under_mae']:,.0f} &nbsp;&nbsp;|&nbsp;&nbsp; **Average Excess (Over MAE):** ${ts['over_mae']:,.0f}")
-                
-                st.markdown("---")
-                st.markdown("### 🛡️ Buffer Strategy Analysis (Under-Prediction Risk Only)")
                 st.caption(f"Applies a financial buffer scaled by the under-prediction probability to claims that cleared the {selected_level.capitalize()} thresholds.")
                 
-                import pandas as pd
                 buf_stats = stats.get("buffer_stats", {}).get(selected_level, [])
                 if buf_stats:
                     buf_df = pd.DataFrame(buf_stats)
@@ -767,15 +782,23 @@ def main():
                 with pr_cols[0]:
                     st.markdown("**Under-Prediction Risk Classifier**")
                     if pr_under:
-                        df_pu = pd.DataFrame({"Precision": pr_under["precision"]}, index=pr_under["recall"]).sort_index()
-                        st.line_chart(df_pu, x_label="Recall", y_label="Precision", color="#ff7675")
+                        df_pu = pd.DataFrame({
+                            "Precision": pr_under["precision"],
+                            "Recall": pr_under["recall"],
+                        }, index=pr_under["thresholds"]).sort_index()
+                        df_pu["F1 Score"] = 2 * (df_pu["Precision"] * df_pu["Recall"]) / (df_pu["Precision"] + df_pu["Recall"] + 1e-9)
+                        st.line_chart(df_pu, x_label="Threshold", y_label="Score", color=["#0984e3", "#d63031", "#00b894"])
                         st.caption(f"AUC: {pr_under.get('auc', 0):.3f}")
                 
                 with pr_cols[1]:
                     st.markdown("**Over-Prediction Risk Classifier**")
                     if pr_over:
-                        df_po = pd.DataFrame({"Precision": pr_over["precision"]}, index=pr_over["recall"]).sort_index()
-                        st.line_chart(df_po, x_label="Recall", y_label="Precision", color="#00b894")
+                        df_po = pd.DataFrame({
+                            "Precision": pr_over["precision"],
+                            "Recall": pr_over["recall"],
+                        }, index=pr_over["thresholds"]).sort_index()
+                        df_po["F1 Score"] = 2 * (df_po["Precision"] * df_po["Recall"]) / (df_po["Precision"] + df_po["Recall"] + 1e-9)
+                        st.line_chart(df_po, x_label="Threshold", y_label="Score", color=["#0984e3", "#d63031", "#00b894"])
                         st.caption(f"AUC: {pr_over.get('auc', 0):.3f}")
                         
                 st.markdown("---")
@@ -796,6 +819,7 @@ def main():
                     if fi_over:
                         df_fi_o = pd.DataFrame(list(fi_over.items()), columns=["Feature", "Importance"]).sort_values("Importance", ascending=True)
                         st.bar_chart(df_fi_o.set_index("Feature"), horizontal=True, color="#00b894")
+
 
 if __name__ == "__main__":
     main()
