@@ -675,12 +675,6 @@ def main():
                 with summary_cols[3]:
                     margin_pct = (margin / charge_result['predicted_amount'] * 100) if charge_result['predicted_amount'] != 0 else 0
                     render_metric_card("Margin %", f"{margin_pct:.1f}%", "")
-
-
-        if __name__ == "__main__":
-        main()
-
-
     with tab2:
         st.markdown('<div class="section-title">🔍 Model Monitoring & Test Statistics</div>', unsafe_allow_html=True)
         st.caption("Insights based on the full external test dataset.")
@@ -802,3 +796,6 @@ def main():
                     if fi_over:
                         df_fi_o = pd.DataFrame(list(fi_over.items()), columns=["Feature", "Importance"]).sort_values("Importance", ascending=True)
                         st.bar_chart(df_fi_o.set_index("Feature"), horizontal=True, color="#00b894")
+
+if __name__ == "__main__":
+    main()
