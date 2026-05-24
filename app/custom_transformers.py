@@ -66,6 +66,9 @@ class AutomatedFeatureEngineer(BaseEstimator, TransformerMixin):
             self.dih_enc.fit(X[self.te_days_in_hosp_cols], X['Length of Stay'])
 
         return self
+        
+    def __sklearn_is_fitted__(self):
+        return True
 
     def fit_transform(self, X, y=None):
         X_out = X.copy()

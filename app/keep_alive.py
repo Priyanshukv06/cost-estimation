@@ -13,6 +13,7 @@ when it's woken up by the cron. It is NOT meant to keep it warm 24/7
 import os
 import asyncio
 import logging
+# pyrefly: ignore [missing-import]
 import httpx
 
 logger = logging.getLogger(__name__)

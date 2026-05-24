@@ -12,8 +12,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.model_loader import load_all_models
-from app.routers import cost, charge, data
+from app.routers import cost, charge, data, stats
 from app.routers.data import load_sample_data
+from app.routers.stats import load_test_stats
 from app.keep_alive import keep_alive_loop
 from app.models import HealthResponse
 
@@ -39,6 +40,9 @@ async def lifespan(app: FastAPI):
 
     # Load sample data for the randomize feature
     load_sample_data()
+
+    # Load precomputed test statistics
+    load_test_stats()
 
     # Start keep-alive background task
     keep_alive_task = asyncio.create_task(keep_alive_loop())
@@ -84,7 +88,7 @@ app.add_middleware(
 app.include_router(cost.router)
 app.include_router(charge.router)
 app.include_router(data.router)
-
+app.include_router(stats.router)
 
 # ─── Health Check ─────────────────────────────────────────────────────────────
 

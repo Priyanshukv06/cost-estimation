@@ -519,162 +519,286 @@ def main():
 
     patient = st.session_state.get("patient_data", {})
 
-    # ── Patient Input Form ────────────────────────────────────────────────────
-    st.markdown('<div class="section-title">📋 Patient Information</div>', unsafe_allow_html=True)
-    st.caption("Edit any field below or click **Randomize Patient** in the sidebar to load test data")
+    tab1, tab2 = st.tabs(["Patient Evaluation", "Model Monitoring"])
+    with tab1:
+        # ── Patient Input Form ────────────────────────────────────────────────────
+        st.markdown('<div class="section-title">📋 Patient Information</div>', unsafe_allow_html=True)
+        st.caption("Edit any field below or click **Randomize Patient** in the sidebar to load test data")
 
-    cols_per_row = 3
-    field_names = list(FIELD_LABELS.keys())
-    current_values = {}
+        cols_per_row = 3
+        field_names = list(FIELD_LABELS.keys())
+        current_values = {}
 
-    for i in range(0, len(field_names), cols_per_row):
-        cols = st.columns(cols_per_row)
-        for j, col in enumerate(cols):
-            idx = i + j
-            if idx >= len(field_names):
-                break
+        for i in range(0, len(field_names), cols_per_row):
+            cols = st.columns(cols_per_row)
+            for j, col in enumerate(cols):
+                idx = i + j
+                if idx >= len(field_names):
+                    break
 
-            field = field_names[idx]
-            label = FIELD_LABELS[field]
-            options = field_options.get(field, [])
+                field = field_names[idx]
+                label = FIELD_LABELS[field]
+                options = field_options.get(field, [])
 
-            with col:
-                if options:
-                    # Compute initial index (only used on first render
-                    # when the key doesn't exist in session_state yet)
-                    default_val = str(patient.get(field, ""))
-                    default_idx = 0
-                    if default_val in options:
-                        default_idx = options.index(default_val)
+                with col:
+                    if options:
+                        # Compute initial index (only used on first render
+                        # when the key doesn't exist in session_state yet)
+                        default_val = str(patient.get(field, ""))
+                        default_idx = 0
+                        if default_val in options:
+                            default_idx = options.index(default_val)
 
-                    selected = st.selectbox(
-                        label,
-                        options=options,
-                        index=default_idx,
-                        key=f"field_{field}",
-                    )
-                    current_values[field] = selected
-                else:
-                    current_values[field] = st.text_input(
-                        label,
-                        value=str(patient.get(field, "")),
-                        key=f"field_{field}",
-                    )
+                        selected = st.selectbox(
+                            label,
+                            options=options,
+                            index=default_idx,
+                            key=f"field_{field}",
+                        )
+                        current_values[field] = selected
+                    else:
+                        current_values[field] = st.text_input(
+                            label,
+                            value=str(patient.get(field, "")),
+                            key=f"field_{field}",
+                        )
 
 
 
-    # ── Detect Manual Edits ────────────────────────────────────────────────────
-    # Compare current widget values to stored patient_data to detect changes
-    fields_modified = False
-    changed_fields = []
-    if patient:  # only check if we have a randomized patient
-        for field in FIELD_LABELS:
-            original_val = str(patient.get(field, ""))
-            current_val = str(current_values.get(field, ""))
-            if original_val and current_val and original_val != current_val:
-                fields_modified = True
-                changed_fields.append(FIELD_LABELS[field])
+        # ── Detect Manual Edits ────────────────────────────────────────────────────
+        # Compare current widget values to stored patient_data to detect changes
+        fields_modified = False
+        changed_fields = []
+        if patient:  # only check if we have a randomized patient
+            for field in FIELD_LABELS:
+                original_val = str(patient.get(field, ""))
+                current_val = str(current_values.get(field, ""))
+                if original_val and current_val and original_val != current_val:
+                    fields_modified = True
+                    changed_fields.append(FIELD_LABELS[field])
 
-    # Show actuals only when patient data is unmodified
-    show_actuals = st.session_state.get("has_actuals", False) and not fields_modified
+        # Show actuals only when patient data is unmodified
+        show_actuals = st.session_state.get("has_actuals", False) and not fields_modified
 
-    # ── Build API Payload ─────────────────────────────────────────────────────
-    api_payload = {}
-    for field, api_name in FIELD_TO_API.items():
-        api_payload[api_name] = current_values.get(field, "")
-    api_payload["birth_weight"] = 0  # Not used by model, always default
+        # ── Build API Payload ─────────────────────────────────────────────────────
+        api_payload = {}
+        for field, api_name in FIELD_TO_API.items():
+            api_payload[api_name] = current_values.get(field, "")
+        api_payload["birth_weight"] = 0  # Not used by model, always default
 
-    # Only include actual values when patient data hasn't been manually edited
-    if show_actuals:
-        actual_cost = patient.get("Total Costs")
-        actual_charge = patient.get("Total Charges")
-        if actual_cost is not None:
-            api_payload["actual_total_cost"] = float(actual_cost)
-        if actual_charge is not None:
-            api_payload["actual_total_charge"] = float(actual_charge)
+        # Only include actual values when patient data hasn't been manually edited
+        if show_actuals:
+            actual_cost = patient.get("Total Costs")
+            actual_charge = patient.get("Total Charges")
+            if actual_cost is not None:
+                api_payload["actual_total_cost"] = float(actual_cost)
+            if actual_charge is not None:
+                api_payload["actual_total_charge"] = float(actual_charge)
 
-    # Show edit indicator
-    if fields_modified:
-        st.info(
-            f"✏️ **Modified fields:** {', '.join(changed_fields[:5])}"
-            + (f" +{len(changed_fields) - 5} more" if len(changed_fields) > 5 else "")
-            + " — Actuals hidden. Click Predict to see the impact."
-        )
-
-    # ── Predict Button / Auto-predict ─────────────────────────────────────────
-    st.markdown("")
-    predict_col1, predict_col2, predict_col3 = st.columns([1, 2, 1])
-    with predict_col2:
-        predict_clicked = st.button(
-            "🚀 Predict Cost & Charge",
-            use_container_width=True,
-            type="primary",
-        )
-
-    # Auto-predict flag set by Randomize
-    auto_predict = st.session_state.pop("auto_predict", False)
-    should_predict = predict_clicked or auto_predict
-
-    if should_predict:
-        with st.spinner("Running predictions through both models..."):
-            cost_result = predict("cost", api_payload, risk_level)
-            charge_result = predict("charge", api_payload, risk_level)
-
-        # Store results in session_state so they persist across reruns
-        st.session_state["cost_result"] = cost_result
-        st.session_state["charge_result"] = charge_result
-
-        # If this is an auto-predict (from Randomize), save as baseline
-        if auto_predict:
-            st.session_state["baseline_cost"] = cost_result["predicted_amount"] if cost_result else None
-            st.session_state["baseline_charge"] = charge_result["predicted_amount"] if charge_result else None
-
-    # ── Results (show if available) ───────────────────────────────────────────
-    cost_result = st.session_state.get("cost_result")
-    charge_result = st.session_state.get("charge_result")
-
-    # Get baseline amounts for delta display (only show when fields modified)
-    baseline_cost = st.session_state.get("baseline_cost") if fields_modified else None
-    baseline_charge = st.session_state.get("baseline_charge") if fields_modified else None
-
-    if cost_result or charge_result:
-        st.markdown("---")
-        st.markdown('<div class="section-title">📊 Prediction Results</div>', unsafe_allow_html=True)
-
-        col_cost, col_charge = st.columns(2)
-
-        with col_cost:
-            render_prediction_result(
-                cost_result, "cost",
-                show_actuals=show_actuals,
-                baseline_amount=baseline_cost,
+        # Show edit indicator
+        if fields_modified:
+            st.info(
+                f"✏️ **Modified fields:** {', '.join(changed_fields[:5])}"
+                + (f" +{len(changed_fields) - 5} more" if len(changed_fields) > 5 else "")
+                + " — Actuals hidden. Click Predict to see the impact."
             )
 
-        with col_charge:
-            render_prediction_result(
-                charge_result, "charge",
-                show_actuals=show_actuals,
-                baseline_amount=baseline_charge,
+        # ── Predict Button / Auto-predict ─────────────────────────────────────────
+        st.markdown("")
+        predict_col1, predict_col2, predict_col3 = st.columns([1, 2, 1])
+        with predict_col2:
+            predict_clicked = st.button(
+                "🚀 Predict Cost & Charge",
+                use_container_width=True,
+                type="primary",
             )
 
-        # Summary comparison
-        if cost_result and charge_result:
+        # Auto-predict flag set by Randomize
+        auto_predict = st.session_state.pop("auto_predict", False)
+        should_predict = predict_clicked or auto_predict
+
+        if should_predict:
+            with st.spinner("Running predictions through both models..."):
+                cost_result = predict("cost", api_payload, risk_level)
+                charge_result = predict("charge", api_payload, risk_level)
+
+            # Store results in session_state so they persist across reruns
+            st.session_state["cost_result"] = cost_result
+            st.session_state["charge_result"] = charge_result
+
+            # If this is an auto-predict (from Randomize), save as baseline
+            if auto_predict:
+                st.session_state["baseline_cost"] = cost_result["predicted_amount"] if cost_result else None
+                st.session_state["baseline_charge"] = charge_result["predicted_amount"] if charge_result else None
+
+        # ── Results (show if available) ───────────────────────────────────────────
+        cost_result = st.session_state.get("cost_result")
+        charge_result = st.session_state.get("charge_result")
+
+        # Get baseline amounts for delta display (only show when fields modified)
+        baseline_cost = st.session_state.get("baseline_cost") if fields_modified else None
+        baseline_charge = st.session_state.get("baseline_charge") if fields_modified else None
+
+        if cost_result or charge_result:
             st.markdown("---")
-            st.markdown('<div class="section-title">📈 Summary Comparison</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-title">📊 Prediction Results</div>', unsafe_allow_html=True)
 
-            summary_cols = st.columns(4)
-            with summary_cols[0]:
-                render_metric_card("Cost Estimate", f"${cost_result['predicted_amount']:,.2f}", "cost")
-            with summary_cols[1]:
-                render_metric_card("Charge Estimate", f"${charge_result['predicted_amount']:,.2f}", "charge")
-            with summary_cols[2]:
-                margin = charge_result['predicted_amount'] - cost_result['predicted_amount']
-                render_metric_card("Estimated Margin", f"${margin:,.2f}", "")
-            with summary_cols[3]:
-                margin_pct = (margin / charge_result['predicted_amount'] * 100) if charge_result['predicted_amount'] != 0 else 0
-                render_metric_card("Margin %", f"{margin_pct:.1f}%", "")
+            col_cost, col_charge = st.columns(2)
+
+            with col_cost:
+                render_prediction_result(
+                    cost_result, "cost",
+                    show_actuals=show_actuals,
+                    baseline_amount=baseline_cost,
+                )
+
+            with col_charge:
+                render_prediction_result(
+                    charge_result, "charge",
+                    show_actuals=show_actuals,
+                    baseline_amount=baseline_charge,
+                )
+
+            # Summary comparison
+            if cost_result and charge_result:
+                st.markdown("---")
+                st.markdown('<div class="section-title">📈 Summary Comparison</div>', unsafe_allow_html=True)
+
+                summary_cols = st.columns(4)
+                with summary_cols[0]:
+                    render_metric_card("Cost Estimate", f"${cost_result['predicted_amount']:,.2f}", "cost")
+                with summary_cols[1]:
+                    render_metric_card("Charge Estimate", f"${charge_result['predicted_amount']:,.2f}", "charge")
+                with summary_cols[2]:
+                    margin = charge_result['predicted_amount'] - cost_result['predicted_amount']
+                    render_metric_card("Estimated Margin", f"${margin:,.2f}", "")
+                with summary_cols[3]:
+                    margin_pct = (margin / charge_result['predicted_amount'] * 100) if charge_result['predicted_amount'] != 0 else 0
+                    render_metric_card("Margin %", f"{margin_pct:.1f}%", "")
 
 
-if __name__ == "__main__":
-    main()
+        if __name__ == "__main__":
+        main()
 
+
+    with tab2:
+        st.markdown('<div class="section-title">🔍 Model Monitoring & Test Statistics</div>', unsafe_allow_html=True)
+        st.caption("Insights based on the full external test dataset.")
+        
+        # Load test stats
+        @st.cache_data(ttl=300)
+        def fetch_test_stats():
+            try:
+                r = httpx.get(f"{API_BASE}/api/v1/stats/test_stats", timeout=REQUEST_TIMEOUT)
+                r.raise_for_status()
+                return r.json()
+            except Exception as e:
+                st.error(f"Failed to fetch test stats: {e}")
+                return {}
+                
+        test_stats = fetch_test_stats()
+        
+        if not test_stats:
+            st.warning("Test stats not available. Ensure the backend has loaded them.")
+        else:
+            model_toggle = st.radio("Select Model", ["Cost Estimation", "Charge Estimation"], horizontal=True)
+            mt = "cost" if "Cost" in model_toggle else "charge"
+            stats = test_stats.get(mt, {})
+            
+            if stats:
+                st.markdown("### 📊 Dual Risk Impact Analysis")
+                
+                # Format threshold labels
+                thresh_stats = stats.get("threshold_stats", {})
+                thresh_options = []
+                for level, data in thresh_stats.items():
+                    label = f"{level.capitalize()} (U: {data['threshold_u']:.2f}, O: {data['threshold_o']:.2f})"
+                    thresh_options.append((level, label))
+                    
+                selected_label = st.selectbox(
+                    "Select Risk Threshold Preset", 
+                    [lbl for _, lbl in thresh_options],
+                    index=2 # Default to Balanced
+                )
+                selected_level = next(lvl for lvl, lbl in thresh_options if lbl == selected_label)
+                
+                # Show threshold stats
+                ts = thresh_stats[selected_level]
+                
+                t_cols = st.columns(4)
+                with t_cols[0]:
+                    render_metric_card("Filtered (Rejected)", f"{ts['filtering_pct']:.1f}%", "risky")
+                with t_cols[1]:
+                    render_metric_card("Overall MAE", f"${ts['overall_mae']:,.0f}", "cost" if mt == "cost" else "charge")
+                with t_cols[2]:
+                    render_metric_card("Under-Predictions", f"{ts['under_pct']:.1f}%", "risky")
+                with t_cols[3]:
+                    render_metric_card("Over-Predictions", f"{ts['over_pct']:.1f}%", "safe")
+                    
+                st.markdown(f"**Average Deficit (Under MAE):** ${ts['under_mae']:,.0f} &nbsp;&nbsp;|&nbsp;&nbsp; **Average Excess (Over MAE):** ${ts['over_mae']:,.0f}")
+                
+                st.markdown("---")
+                st.markdown("### 🛡️ Buffer Strategy Analysis (Under-Prediction Risk Only)")
+                st.caption(f"Applies a financial buffer scaled by the under-prediction probability to claims that cleared the {selected_level.capitalize()} thresholds.")
+                
+                import pandas as pd
+                buf_stats = stats.get("buffer_stats", {}).get(selected_level, [])
+                if buf_stats:
+                    buf_df = pd.DataFrame(buf_stats)
+                    # Format DataFrame
+                    display_df = buf_df.copy()
+                    display_df['buffer'] = display_df['buffer'].apply(lambda x: f"${x:,}")
+                    display_df['overall_mae'] = display_df['overall_mae'].apply(lambda x: f"${x:,.0f}")
+                    display_df['under_pct'] = display_df['under_pct'].apply(lambda x: f"{x:.1f}%")
+                    display_df['under_mae'] = display_df['under_mae'].apply(lambda x: f"${x:,.0f}")
+                    display_df['over_pct'] = display_df['over_pct'].apply(lambda x: f"{x:.1f}%")
+                    display_df['over_mae'] = display_df['over_mae'].apply(lambda x: f"${x:,.0f}")
+                    
+                    display_df.columns = [
+                        "Buffer Max", "Overall MAE", 
+                        "Under-Pred %", "Avg Deficit (Under MAE)", 
+                        "Over-Pred %", "Avg Excess (Over MAE)",
+                        "Flipped Cases (Under → Over)"
+                    ]
+                    
+                    st.dataframe(display_df, use_container_width=True, hide_index=True)
+                
+                st.markdown("---")
+                st.markdown("### 🎯 Precision-Recall Curves")
+                pr_cols = st.columns(2)
+                
+                pr_under = stats.get("pr_curves", {}).get("under", {})
+                pr_over = stats.get("pr_curves", {}).get("over", {})
+                
+                with pr_cols[0]:
+                    st.markdown("**Under-Prediction Risk Classifier**")
+                    if pr_under:
+                        df_pu = pd.DataFrame({"Precision": pr_under["precision"]}, index=pr_under["recall"]).sort_index()
+                        st.line_chart(df_pu, x_label="Recall", y_label="Precision", color="#ff7675")
+                        st.caption(f"AUC: {pr_under.get('auc', 0):.3f}")
+                
+                with pr_cols[1]:
+                    st.markdown("**Over-Prediction Risk Classifier**")
+                    if pr_over:
+                        df_po = pd.DataFrame({"Precision": pr_over["precision"]}, index=pr_over["recall"]).sort_index()
+                        st.line_chart(df_po, x_label="Recall", y_label="Precision", color="#00b894")
+                        st.caption(f"AUC: {pr_over.get('auc', 0):.3f}")
+                        
+                st.markdown("---")
+                st.markdown("### 🔑 Feature Importance (Top Drivers)")
+                st.caption("Derived via permutation importance from the dual risk classifiers.")
+                
+                fi_under = stats.get("feature_importance", {}).get("under", {})
+                fi_over = stats.get("feature_importance", {}).get("over", {})
+                
+                fi_cols = st.columns(2)
+                with fi_cols[0]:
+                    st.markdown("**Drivers of Under-Prediction Risk**")
+                    if fi_under:
+                        df_fi_u = pd.DataFrame(list(fi_under.items()), columns=["Feature", "Importance"]).sort_values("Importance", ascending=True)
+                        st.bar_chart(df_fi_u.set_index("Feature"), horizontal=True, color="#ff7675")
+                with fi_cols[1]:
+                    st.markdown("**Drivers of Over-Prediction Risk**")
+                    if fi_over:
+                        df_fi_o = pd.DataFrame(list(fi_over.items()), columns=["Feature", "Importance"]).sort_values("Importance", ascending=True)
+                        st.bar_chart(df_fi_o.set_index("Feature"), horizontal=True, color="#00b894")

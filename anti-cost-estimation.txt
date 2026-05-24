@@ -1,0 +1,24 @@
+look at my python files name 
+
+cost_estimation.py
+and 
+
+charge_estimation.py
+
+
+we are trying to estimate the final charge and cost estimates(we are using the parameters that are avialble at the time of admission only to predict the final cost/charge)
+
+we want to build a docker image for the backend and deploy it on render free tier, the frontend will be hosted on streamlit.io 
+
+both my cost and charge estimation models should be working simultaneously if needed
+
+can you go through my codebase and build the backend, for now dont focus on frontend
+
+also always maintain progress.md file to track current progress
+
+
+
+birth weight remove
+button to show github/jupyter render
+shap
+
