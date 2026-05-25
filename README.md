@@ -190,4 +190,4 @@ Includes: EDA, feature engineering, model training, hyperparameter tuning, risk 
 
 ---
 
-*Built by [Priyanshu Kumar Verma](https://github.com/Priyanshukv06)*
+*Built by [Priyanshu Verma](https://github.com/Priyanshukv06)*
