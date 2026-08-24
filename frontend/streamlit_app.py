@@ -20,11 +20,11 @@ REQUEST_TIMEOUT = 60  # seconds (cold start can take up to 60s)
 
 # Risk filter presets with display labels
 FILTER_LEVELS = {
-    "🟢 Lenient — Fewer flags, wider acceptance": "lenient",
-    "🔵 Moderate — Slightly tighter filtering": "moderate",
-    "⚖️ Balanced — Default recommended setting": "balanced",
-    "🟠 Cautious — More cases flagged as risky": "cautious",
-    "🔴 Aggressive — Strictest filtering": "aggressive",
+    "Lenient — Fewer flags, wider acceptance": "lenient",
+    "Moderate — Slightly tighter filtering": "moderate",
+    "Balanced — Default recommended setting": "balanced",
+    "Cautious — More cases flagged as risky": "cautious",
+    "Aggressive — Strictest filtering": "aggressive",
 }
 
 # Column name mapping: API field → Display label
@@ -322,7 +322,7 @@ def render_prediction_result(result: dict, model_type: str,
 
     is_cost = model_type == "cost"
     accent = "#00cec9" if is_cost else "#6C5CE7"
-    title = "💰 Cost Estimation" if is_cost else "🏷️ Charge Estimation"
+    title = "Cost Estimation" if is_cost else "Charge Estimation"
     css_class = "cost" if is_cost else "charge"
 
     st.markdown(f'<div class="section-title">{title}</div>', unsafe_allow_html=True)
@@ -377,13 +377,13 @@ def render_prediction_result(result: dict, model_type: str,
     # Dynamic Risk Assessment
     def get_risk_details(prob, thresh):
         if prob >= thresh:
-            return 4, "🔴 CRITICAL", "#ff4757" # Red
+            return 4, "CRITICAL", "#ff4757" # Red
         elif prob >= thresh - 0.10:
-            return 3, "🟠 HIGH", "#ffa502" # Orange
+            return 3, "HIGH", "#ffa502" # Orange
         elif prob >= thresh - 0.20:
-            return 2, "🟡 MEDIUM", "#eccc68" # Yellow
+            return 2, "MEDIUM", "#eccc68" # Yellow
         else:
-            return 1, "🟢 LOW", "#2ed573" # Green
+            return 1, "LOW", "#2ed573" # Green
 
     prob_u = result["risk_probability_under"]
     prob_o = result["risk_probability_over"]
@@ -442,7 +442,6 @@ def render_prediction_result(result: dict, model_type: str,
 def main():
     st.set_page_config(
         page_title="Hospital Cost & Charge Estimator",
-        page_icon="🏥",
         layout="wide",
         initial_sidebar_state="expanded",
     )
@@ -466,7 +465,7 @@ def main():
     if app_mode == "Patient Evaluation":
         # ── Sidebar ───────────────────────────────────────────────────────────────
         with st.sidebar:
-            st.markdown("### ⚙️ Settings")
+            st.markdown("### Settings")
 
             # Risk filter selector
             filter_label = st.selectbox(
@@ -487,9 +486,9 @@ def main():
             st.divider()
 
             # Randomize button
-            st.markdown("### 🎲 Sample Data")
+            st.markdown("### Sample Data")
             st.caption("Load a random patient from the test dataset")
-            if st.button("🔀 Randomize Patient", use_container_width=True, type="primary"):
+            if st.button("Randomize Patient", use_container_width=True, type="primary"):
                 random_patient = fetch_random_patient()
                 if random_patient:
                     st.session_state["patient_data"] = random_patient
@@ -512,7 +511,7 @@ def main():
             st.divider()
 
             # Backend status
-            st.markdown("### 📡 Backend Status")
+            st.markdown("### Backend Status")
 
             @st.cache_data(ttl=60)
             def check_backend_health():
@@ -532,7 +531,7 @@ def main():
             st.divider()
 
             # Portfolio / GitHub links
-            st.markdown("### 📂 Project")
+            st.markdown("### Project")
             st.markdown(
                 "[![GitHub](https://img.shields.io/badge/GitHub-Source_Code-181717?logo=github&style=for-the-badge)]"
                 "(https://github.com/Priyanshukv06/cost-estimation)"
@@ -550,7 +549,7 @@ def main():
         )
     # ── Guard: field options required ─────────────────────────────────────────
     if not field_options:
-        st.warning("⏳ Loading field options from backend... If this persists, the server may be cold-starting (takes ~30-60s on free tier).")
+        st.warning("Loading field options from backend... If this persists, the server may be cold-starting (takes ~30-60s on free tier).")
         st.stop()
 
     # ── Initialize defaults on first load ─────────────────────────────────────
@@ -562,7 +561,7 @@ def main():
 
     if app_mode == "Patient Evaluation":
         # ── Patient Input Form ────────────────────────────────────────────────────
-        st.markdown('<div class="section-title">📋 Patient Information</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Patient Information</div>', unsafe_allow_html=True)
         st.caption("Edit any field below or click **Randomize Patient** in the sidebar to load test data")
 
         cols_per_row = 3
@@ -638,7 +637,7 @@ def main():
         # Show edit indicator
         if fields_modified:
             st.info(
-                f"✏️ **Modified fields:** {', '.join(changed_fields[:5])}"
+                f"**Modified fields:** {', '.join(changed_fields[:5])}"
                 + (f" +{len(changed_fields) - 5} more" if len(changed_fields) > 5 else "")
                 + " — Actuals hidden. Click Predict to see the impact."
             )
@@ -648,7 +647,7 @@ def main():
         predict_col1, predict_col2, predict_col3 = st.columns([1, 2, 1])
         with predict_col2:
             predict_clicked = st.button(
-                "🚀 Predict Cost & Charge",
+                "Predict Cost & Charge",
                 use_container_width=True,
                 type="primary",
             )
@@ -681,7 +680,7 @@ def main():
 
         if cost_result or charge_result:
             st.markdown("---")
-            st.markdown('<div class="section-title">📊 Prediction Results</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-title">Prediction Results</div>', unsafe_allow_html=True)
 
             col_cost, col_charge = st.columns(2)
 
@@ -702,7 +701,7 @@ def main():
             # Summary comparison
             if cost_result and charge_result:
                 st.markdown("---")
-                st.markdown('<div class="section-title">📈 Summary Comparison</div>', unsafe_allow_html=True)
+                st.markdown('<div class="section-title">Summary Comparison</div>', unsafe_allow_html=True)
 
                 summary_cols = st.columns(4)
                 with summary_cols[0]:
@@ -716,7 +715,7 @@ def main():
                     margin_pct = (margin / charge_result['predicted_amount'] * 100) if charge_result['predicted_amount'] != 0 else 0
                     render_metric_card("Margin %", f"{margin_pct:.1f}%", "")
     elif app_mode == "Model Monitoring":
-        st.markdown('<div class="section-title">🔍 Model Monitoring & Test Statistics</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Model Monitoring & Test Statistics</div>', unsafe_allow_html=True)
         st.caption("Insights based on the full external test dataset.")
         
         # Load test stats
@@ -740,7 +739,7 @@ def main():
             stats = test_stats.get(mt, {})
             
             if stats:
-                st.markdown("### 📊 Dual Risk Impact Analysis")
+                st.markdown("### Dual Risk Impact Analysis")
                 
                 # Format threshold labels
                 thresh_stats = stats.get("threshold_stats", {})
@@ -769,7 +768,7 @@ def main():
                 st.dataframe(df_thresh, use_container_width=True, hide_index=True)
                 
                 st.markdown("---")
-                st.markdown("### 🛡️ Buffer Strategy Analysis (Under-Prediction Risk Only)")
+                st.markdown("### Buffer Strategy Analysis (Under-Prediction Risk Only)")
                 
                 thresh_options = []
                 for level, data in thresh_stats.items():
@@ -807,7 +806,7 @@ def main():
                     st.dataframe(display_df, use_container_width=True, hide_index=True)
                 
                 st.markdown("---")
-                st.markdown("### 🎯 Precision-Recall Curves")
+                st.markdown("### Precision-Recall Curves")
                 pr_cols = st.columns(2)
                 
                 pr_under = stats.get("pr_curves", {}).get("under", {})
@@ -836,7 +835,7 @@ def main():
                         st.caption(f"AUC: {pr_over.get('auc', 0):.3f}")
                         
                 st.markdown("---")
-                st.markdown("### 🔑 Feature Importance (Top Drivers)")
+                st.markdown("### Feature Importance (Top Drivers)")
                 st.caption("Derived via permutation importance from the estimation regressors.")
                 
                 fi_v1 = stats.get("feature_importance", {}).get("v1", {})
