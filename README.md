@@ -25,19 +25,67 @@ This project builds 8 specialized machine learning models (4 for cost estimation
 
 The system consists of two deployed services communicating over HTTPS:
 
-```
-+---------------------------------------------------+       HTTPS        +--------------------------------------------------+
-|               Streamlit Frontend                  | <----------------> |                 FastAPI Backend                  |
-|               (Streamlit Cloud)                   |                    |                (Render Free Tier)                |
-|                                                   |                    |                                                  |
-|  - Interactive admission input form (17 fields)   |                    |  - 8 ML models loaded in memory (.joblib)        |
-|  - Dynamic field options from backend             |                    |  - Hybrid feature engineering pipeline          |
-|  - Dual prediction (Cost & Charge)                |                    |  - Dual risk classification (Under / Over)       |
-|  - Configurable risk filter presets               |                    |  - Configurable risk threshold presets           |
-|  - Real-time what-if scenario analysis            |                    |  - 500 test patient sample records               |
-|  - Random test data loader                        |                    |  - Precomputed test statistics & evaluation data |
-|  - Model monitoring & evaluation dashboard        |                    |  - Input validation with Pydantic Literal types  |
-+---------------------------------------------------+                    +--------------------------------------------------+
+```mermaid
+flowchart LR
+    %% Theme Styling
+    classDef clientStyle fill:#1e222d,stroke:#6C5CE7,stroke-width:2px,color:#ffffff;
+    classDef apiStyle fill:#1e222d,stroke:#00cec9,stroke-width:2px,color:#ffffff;
+    classDef pipelineStyle fill:#262a36,stroke:#fdcb6e,stroke-width:1.5px,color:#ffffff;
+    classDef modelStyle fill:#262a36,stroke:#ff7675,stroke-width:1.5px,color:#ffffff;
+    classDef decisionStyle fill:#1e222d,stroke:#00b894,stroke-width:2px,color:#ffffff;
+    classDef dataStyle fill:#262a36,stroke:#74b9ff,stroke-width:1.5px,color:#ffffff;
+
+    %% Client Tier
+    subgraph ClientTier["Client Tier (Streamlit Cloud)"]
+        User(["Clinician / User"])
+        UI["Streamlit Dashboard<br/>• 17-Field Admission Form<br/>• Real-Time What-If Deltas<br/>• Risk Badges & Gauge Bars<br/>• Model Monitoring Charts"]
+    end
+
+    %% Backend Tier
+    subgraph BackendTier["Backend Tier (FastAPI on Render Docker)"]
+        API["FastAPI Gateway<br/>• CORS Middleware<br/>• Pydantic Schema Validation<br/>• Literal Filter Presets"]
+
+        subgraph CoreML["Inference & Feature Engine"]
+            direction TB
+            FE["AutomatedFeatureEngineer<br/>• 14 Ordinal Encodings<br/>• 3 Target Encodings (Cost/Charge)<br/>• 3 Target Encodings (LOS)"]
+            
+            subgraph Regressors["Estimation Models"]
+                V1["V1 History Regressors"]
+                V2["V2 Specialist Regressors"]
+            end
+
+            Hybrid["Hybrid Feature Assembler<br/>• V2 Features + V1 Encodings + Residual Diff"]
+            RiskClf["Dual Risk Classifiers<br/>• Under-Prediction Classifier<br/>• Over-Prediction Classifier"]
+            Decision["Risk Engine & Serializer<br/>• Threshold Calibration (5 Presets)<br/>• Risk Factor & Safety Flag"]
+        end
+
+        subgraph Precomputed["Static Data"]
+            DataSample[("500 Test Records &<br/>Precomputed Stats")]
+        end
+    end
+
+    %% Unidirectional Dataflow (No Overlaps)
+    User <-->|"1. Input Data / View Output"| UI
+    UI -->|"2. HTTPS POST (Patient JSON)"| API
+    API -->|"3. Patient Schema"| FE
+    FE -->|"4. Clean Features"| V1 & V2
+    V1 & V2 -->|"5. Predictions & Encodings"| Hybrid
+    Hybrid -->|"6. Hybrid Vector"| RiskClf
+    RiskClf -->|"7. Risk Probabilities"| Decision
+    V2 -->|"V2 Estimate"| Decision
+    Decision -->|"8. Serialized Payload"| API
+    API -->|"9. JSON Response (Estimate + Risk)"| UI
+
+    %% Auxiliary Route
+    API <-->|"Field Options & Samples"| DataSample
+
+    %% Class Assignments
+    class User,UI clientStyle;
+    class API apiStyle;
+    class FE,Hybrid pipelineStyle;
+    class V1,V2,RiskClf modelStyle;
+    class Decision decisionStyle;
+    class DataSample dataStyle;
 ```
 
 ---
