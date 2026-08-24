@@ -27,3 +27,8 @@ Thumbs.db
 # Logs
 *.log
 progress.md
+project_details/
+cost_estimation/
+train_notebooks/Untitled-1.py
+train_notebooks/Untitled-2.py
+INTERVIEW_PREP.md
