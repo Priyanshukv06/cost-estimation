@@ -3,7 +3,10 @@ Pydantic request/response schemas for the Cost & Charge Estimation API.
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Literal, Optional
+
+# Valid risk filter levels
+RiskFilterLevel = Literal["lenient", "moderate", "balanced", "cautious", "aggressive"]
 
 
 # ─── Risk Threshold Presets ───────────────────────────────────────────────────
@@ -31,24 +34,24 @@ CHARGE_THRESHOLD_PRESETS = {
 class PatientInput(BaseModel):
     """All fields available at admission time for prediction."""
 
-    hospital_service_area: str = Field(..., description="Hospital Service Area")
-    hospital_county: str = Field(..., description="Hospital County")
-    facility_name: str = Field(..., description="Facility Name")
-    age_group: str = Field(..., description="Age Group (e.g. '30 to 49')")
-    gender: str = Field(..., description="Gender (M/F/U)")
-    race: str = Field(..., description="Race")
-    ethnicity: str = Field(..., description="Ethnicity")
-    type_of_admission: str = Field(..., description="Type of Admission (e.g. 'Emergency', 'Elective')")
-    patient_disposition: str = Field(..., description="Patient Disposition")
-    ccsr_diagnosis_description: str = Field(..., description="CCSR Diagnosis Description")
-    ccsr_procedure_description: str = Field(..., description="CCSR Procedure Description")
-    apr_drg_description: str = Field(..., description="APR DRG Description")
-    apr_mdc_description: str = Field(..., description="APR MDC Description")
-    apr_severity_of_illness_description: str = Field(..., description="APR Severity of Illness Description")
-    apr_risk_of_mortality: str = Field(..., description="APR Risk of Mortality")
-    apr_medical_surgical_description: str = Field(..., description="APR Medical Surgical Description")
+    hospital_service_area: str = Field(..., min_length=1, max_length=500, description="Hospital Service Area")
+    hospital_county: str = Field(..., min_length=1, max_length=500, description="Hospital County")
+    facility_name: str = Field(..., min_length=1, max_length=500, description="Facility Name")
+    age_group: str = Field(..., min_length=1, max_length=200, description="Age Group (e.g. '30 to 49')")
+    gender: str = Field(..., min_length=1, max_length=100, description="Gender (M/F/U)")
+    race: str = Field(..., min_length=1, max_length=200, description="Race")
+    ethnicity: str = Field(..., min_length=1, max_length=200, description="Ethnicity")
+    type_of_admission: str = Field(..., min_length=1, max_length=200, description="Type of Admission (e.g. 'Emergency', 'Elective')")
+    patient_disposition: str = Field(..., min_length=1, max_length=500, description="Patient Disposition")
+    ccsr_diagnosis_description: str = Field(..., min_length=1, max_length=500, description="CCSR Diagnosis Description")
+    ccsr_procedure_description: str = Field(..., min_length=1, max_length=500, description="CCSR Procedure Description")
+    apr_drg_description: str = Field(..., min_length=1, max_length=500, description="APR DRG Description")
+    apr_mdc_description: str = Field(..., min_length=1, max_length=500, description="APR MDC Description")
+    apr_severity_of_illness_description: str = Field(..., min_length=1, max_length=200, description="APR Severity of Illness Description")
+    apr_risk_of_mortality: str = Field(..., min_length=1, max_length=200, description="APR Risk of Mortality")
+    apr_medical_surgical_description: str = Field(..., min_length=1, max_length=200, description="APR Medical Surgical Description")
     birth_weight: float = Field(0, description="Birth Weight — not used by model, always defaults to 0")
-    emergency_department_indicator: str = Field(..., description="Emergency Department Indicator (Y/N)")
+    emergency_department_indicator: str = Field(..., min_length=1, max_length=10, description="Emergency Department Indicator (Y/N)")
 
     # Optional: actual values for comparison (populated from test data samples)
     actual_total_cost: Optional[float] = Field(None, description="Actual Total Cost (for comparison)")
@@ -59,7 +62,7 @@ class PredictionRequest(BaseModel):
     """Single prediction request with configurable risk filtering."""
 
     patient: PatientInput
-    risk_filter_level: str = Field(
+    risk_filter_level: RiskFilterLevel = Field(
         "balanced",
         description="Risk filtering level: 'lenient', 'moderate', 'balanced', 'cautious', 'aggressive'"
     )
@@ -69,7 +72,7 @@ class BatchPredictionRequest(BaseModel):
     """Batch prediction request."""
 
     patients: list[PatientInput]
-    risk_filter_level: str = Field("balanced")
+    risk_filter_level: RiskFilterLevel = Field("balanced")
 
 
 # ─── Response Schemas ─────────────────────────────────────────────────────────

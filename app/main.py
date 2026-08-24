@@ -5,7 +5,6 @@ Cost & Charge Estimation API — predicts hospital inpatient discharge
 costs and charges using admission-time parameters.
 """
 
-import asyncio
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -15,7 +14,6 @@ from app.model_loader import load_all_models
 from app.routers import cost, charge, data, stats
 from app.routers.data import load_sample_data
 from app.routers.stats import load_test_stats
-from app.keep_alive import keep_alive_loop
 from app.models import HealthResponse
 
 # Configure logging
@@ -44,8 +42,6 @@ async def lifespan(app: FastAPI):
     # Load precomputed test statistics
     load_test_stats()
 
-    # Start keep-alive background task
-    keep_alive_task = asyncio.create_task(keep_alive_loop())
 
     logger.info("=" * 60)
     logger.info("  ✅ API Ready — all models loaded")
@@ -54,7 +50,6 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
-    keep_alive_task.cancel()
     logger.info("API shutting down.")
 
 
@@ -75,9 +70,8 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:8501",       # Local Streamlit
-        "https://*.streamlit.app",     # Streamlit Cloud
-        "*",                           # Allow all for development
+        "http://localhost:8501",                  # Local Streamlit
+        "https://cost-estimation-06.streamlit.app", # Streamlit Cloud
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -94,7 +88,7 @@ app.include_router(stats.router)
 
 @app.get("/health", response_model=HealthResponse, tags=["System"])
 async def health_check():
-    """Health check endpoint. Also used by the keep-alive mechanism."""
+    """Health check endpoint — returns system status and model counts."""
     from app.model_loader import _models
 
     return HealthResponse(

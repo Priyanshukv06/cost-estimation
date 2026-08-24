@@ -36,3 +36,5 @@ env/
 *.md
 *.log
 scripts/
+
+project_audit.md

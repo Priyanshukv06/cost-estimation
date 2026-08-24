@@ -16,12 +16,6 @@ router = APIRouter(prefix="/api/v1/charge", tags=["Charge Estimation"])
 
 def _resolve_thresholds(level: str) -> tuple[float, float]:
     """Resolves a named filter level to actual (under, over) threshold values."""
-    level = level.lower().strip()
-    if level not in CHARGE_THRESHOLD_PRESETS:
-        raise ValueError(
-            f"Invalid risk_filter_level '{level}'. "
-            f"Choose from: {list(CHARGE_THRESHOLD_PRESETS.keys())}"
-        )
     return CHARGE_THRESHOLD_PRESETS[level]
 
 

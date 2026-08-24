@@ -13,12 +13,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/data", tags=["Sample Data"])
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "app", "data")
-
-# If running from project root, adjust path
-if not os.path.exists(DATA_DIR):
-    DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data_sample")
-
 # In-memory cache for sample data and field options
 _sample_data: list[dict] = []
 _field_options: dict[str, list[str]] = {}

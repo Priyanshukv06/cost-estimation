@@ -28,59 +28,44 @@ FEATURE_COLUMNS = [
 ]
 
 
+def _patient_to_dict(p: PatientInput) -> dict:
+    """
+    Converts a PatientInput Pydantic model to a dict
+    with the exact column names the model pipelines expect.
+    """
+    return {
+        'Hospital Service Area': p.hospital_service_area,
+        'Hospital County': p.hospital_county,
+        'Facility Name': p.facility_name,
+        'Age Group': p.age_group,
+        'Gender': p.gender,
+        'Race': p.race,
+        'Ethnicity': p.ethnicity,
+        'Type of Admission': p.type_of_admission,
+        'Patient Disposition': p.patient_disposition,
+        'CCSR Diagnosis Description': p.ccsr_diagnosis_description,
+        'CCSR Procedure Description': p.ccsr_procedure_description,
+        'APR DRG Description': p.apr_drg_description,
+        'APR MDC Description': p.apr_mdc_description,
+        'APR Severity of Illness Description': p.apr_severity_of_illness_description,
+        'APR Risk of Mortality': p.apr_risk_of_mortality,
+        'APR Medical Surgical Description': p.apr_medical_surgical_description,
+        'Birth Weight': p.birth_weight,
+        'Emergency Department Indicator': p.emergency_department_indicator,
+    }
+
+
+def patients_to_dataframe(patients: list[PatientInput]) -> pd.DataFrame:
+    """Converts a list of PatientInput to a multi-row DataFrame."""
+    return pd.DataFrame([_patient_to_dict(p) for p in patients])
+
+
 def patient_to_dataframe(patient: PatientInput) -> pd.DataFrame:
     """
     Converts a PatientInput Pydantic model to a single-row DataFrame
     with the exact column names the model pipelines expect.
     """
-    row = {
-        'Hospital Service Area': patient.hospital_service_area,
-        'Hospital County': patient.hospital_county,
-        'Facility Name': patient.facility_name,
-        'Age Group': patient.age_group,
-        'Gender': patient.gender,
-        'Race': patient.race,
-        'Ethnicity': patient.ethnicity,
-        'Type of Admission': patient.type_of_admission,
-        'Patient Disposition': patient.patient_disposition,
-        'CCSR Diagnosis Description': patient.ccsr_diagnosis_description,
-        'CCSR Procedure Description': patient.ccsr_procedure_description,
-        'APR DRG Description': patient.apr_drg_description,
-        'APR MDC Description': patient.apr_mdc_description,
-        'APR Severity of Illness Description': patient.apr_severity_of_illness_description,
-        'APR Risk of Mortality': patient.apr_risk_of_mortality,
-        'APR Medical Surgical Description': patient.apr_medical_surgical_description,
-        'Birth Weight': patient.birth_weight,
-        'Emergency Department Indicator': patient.emergency_department_indicator,
-    }
-    return pd.DataFrame([row])
-
-
-def patients_to_dataframe(patients: list[PatientInput]) -> pd.DataFrame:
-    """Converts a list of PatientInput to a multi-row DataFrame."""
-    rows = []
-    for p in patients:
-        rows.append({
-            'Hospital Service Area': p.hospital_service_area,
-            'Hospital County': p.hospital_county,
-            'Facility Name': p.facility_name,
-            'Age Group': p.age_group,
-            'Gender': p.gender,
-            'Race': p.race,
-            'Ethnicity': p.ethnicity,
-            'Type of Admission': p.type_of_admission,
-            'Patient Disposition': p.patient_disposition,
-            'CCSR Diagnosis Description': p.ccsr_diagnosis_description,
-            'CCSR Procedure Description': p.ccsr_procedure_description,
-            'APR DRG Description': p.apr_drg_description,
-            'APR MDC Description': p.apr_mdc_description,
-            'APR Severity of Illness Description': p.apr_severity_of_illness_description,
-            'APR Risk of Mortality': p.apr_risk_of_mortality,
-            'APR Medical Surgical Description': p.apr_medical_surgical_description,
-            'Birth Weight': p.birth_weight,
-            'Emergency Department Indicator': p.emergency_department_indicator,
-        })
-    return pd.DataFrame(rows)
+    return patients_to_dataframe([patient])
 
 
 def create_hybrid_features(X_raw: pd.DataFrame, model_v1, model_v2):
@@ -113,36 +98,20 @@ def create_hybrid_features(X_raw: pd.DataFrame, model_v1, model_v2):
     return X_hybrid.fillna(0), preds_v2
 
 
-def predict_single(
-    patient: PatientInput,
-    models: dict,
+def _build_prediction_result(
+    predicted_amount: float,
+    prob_under: float,
+    prob_over: float,
     thresholds: tuple[float, float],
     model_type: str,
+    patient: PatientInput,
 ) -> dict:
     """
-    Full inference pipeline for a single patient.
-
-    Args:
-        patient: PatientInput with all admission-time fields
-        models: dict with keys 'v1', 'v2', 'risk_under', 'risk_over'
-        thresholds: (under_threshold, over_threshold)
-        model_type: 'cost' or 'charge'
-
-    Returns:
-        dict with prediction results
+    Builds a standardized prediction result dict from raw model outputs.
+    Shared by both predict_single and predict_batch.
     """
-    X = patient_to_dataframe(patient)
     thresh_u, thresh_o = thresholds
 
-    # Build hybrid features and get V2 prediction
-    X_hybrid, preds_v2 = create_hybrid_features(X, models['v1'], models['v2'])
-    predicted_amount = float(preds_v2[0])
-
-    # Get risk probabilities
-    prob_under = float(models['risk_under'].predict_proba(X_hybrid)[0, 1])
-    prob_over = float(models['risk_over'].predict_proba(X_hybrid)[0, 1])
-
-    # Apply risk thresholds
     risk_flag_under = prob_under >= thresh_u
     risk_flag_over = prob_over >= thresh_o
     is_safe = not risk_flag_under and not risk_flag_over
@@ -178,6 +147,40 @@ def predict_single(
     }
 
 
+def predict_single(
+    patient: PatientInput,
+    models: dict,
+    thresholds: tuple[float, float],
+    model_type: str,
+) -> dict:
+    """
+    Full inference pipeline for a single patient.
+
+    Args:
+        patient: PatientInput with all admission-time fields
+        models: dict with keys 'v1', 'v2', 'risk_under', 'risk_over'
+        thresholds: (under_threshold, over_threshold)
+        model_type: 'cost' or 'charge'
+
+    Returns:
+        dict with prediction results
+    """
+    X = patient_to_dataframe(patient)
+
+    # Build hybrid features and get V2 prediction
+    X_hybrid, preds_v2 = create_hybrid_features(X, models['v1'], models['v2'])
+    predicted_amount = float(preds_v2[0])
+
+    # Get risk probabilities
+    prob_under = float(models['risk_under'].predict_proba(X_hybrid)[0, 1])
+    prob_over = float(models['risk_over'].predict_proba(X_hybrid)[0, 1])
+
+    return _build_prediction_result(
+        predicted_amount, prob_under, prob_over,
+        thresholds, model_type, patient,
+    )
+
+
 def predict_batch(
     patients: list[PatientInput],
     models: dict,
@@ -193,7 +196,6 @@ def predict_batch(
         return []
 
     X = patients_to_dataframe(patients)
-    thresh_u, thresh_o = thresholds
 
     # Build hybrid features and get V2 predictions
     X_hybrid, preds_v2 = create_hybrid_features(X, models['v1'], models['v2'])
@@ -202,42 +204,10 @@ def predict_batch(
     probs_under = models['risk_under'].predict_proba(X_hybrid)[:, 1]
     probs_over = models['risk_over'].predict_proba(X_hybrid)[:, 1]
 
-    results = []
-    for i, patient in enumerate(patients):
-        predicted_amount = float(preds_v2[i])
-        prob_under = float(probs_under[i])
-        prob_over = float(probs_over[i])
-
-        risk_flag_under = prob_under >= thresh_u
-        risk_flag_over = prob_over >= thresh_o
-        is_safe = not risk_flag_under and not risk_flag_over
-
-        max_risk = max(prob_under, prob_over)
-        if max_risk < 0.3:
-            confidence = "HIGH"
-        elif max_risk < 0.6:
-            confidence = "MEDIUM"
-        else:
-            confidence = "LOW"
-
-        actual_amount = None
-        if model_type == "cost" and patient.actual_total_cost is not None:
-            actual_amount = patient.actual_total_cost
-        elif model_type == "charge" and patient.actual_total_charge is not None:
-            actual_amount = patient.actual_total_charge
-
-        results.append({
-            "predicted_amount": round(predicted_amount, 2),
-            "risk_probability_under": round(prob_under, 4),
-            "risk_probability_over": round(prob_over, 4),
-            "risk_flag_under": risk_flag_under,
-            "risk_flag_over": risk_flag_over,
-            "is_safe": is_safe,
-            "confidence_level": confidence,
-            "risk_filter_level": "",
-            "risk_thresholds_used": {"under": thresh_u, "over": thresh_o},
-            "model_type": model_type,
-            "actual_amount": actual_amount,
-        })
-
-    return results
+    return [
+        _build_prediction_result(
+            float(preds_v2[i]), float(probs_under[i]), float(probs_over[i]),
+            thresholds, model_type, patient,
+        )
+        for i, patient in enumerate(patients)
+    ]

@@ -68,7 +68,11 @@ class AutomatedFeatureEngineer(BaseEstimator, TransformerMixin):
         return self
         
     def __sklearn_is_fitted__(self):
-        return True
+        """Check if encoders have been fitted by verifying they have fitted attributes."""
+        try:
+            return hasattr(self.ord_enc, 'categories_')
+        except AttributeError:
+            return False
 
     def fit_transform(self, X, y=None):
         X_out = X.copy()

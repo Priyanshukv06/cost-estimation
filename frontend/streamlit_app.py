@@ -7,11 +7,15 @@ using admission-time parameters. Connects to the FastAPI backend on Render.
 
 import streamlit as st
 import httpx
-import json
+import os
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 
-API_BASE = "https://cost-estimation-g6ny.onrender.com"
+# Backend API URL — configurable via Streamlit secrets or environment variable
+try:
+    API_BASE = st.secrets["API_BASE"]
+except (KeyError, FileNotFoundError):
+    API_BASE = os.environ.get("API_BASE", "https://cost-estimation-g6ny.onrender.com")
 REQUEST_TIMEOUT = 60  # seconds (cold start can take up to 60s)
 
 # Risk filter presets with display labels
@@ -509,10 +513,20 @@ def main():
 
             # Backend status
             st.markdown("### 📡 Backend Status")
-            try:
-                health = httpx.get(f"{API_BASE}/health", timeout=10).json()
+
+            @st.cache_data(ttl=60)
+            def check_backend_health():
+                try:
+                    r = httpx.get(f"{API_BASE}/health", timeout=10)
+                    r.raise_for_status()
+                    return r.json()
+                except Exception:
+                    return None
+
+            health = check_backend_health()
+            if health:
                 st.success(f"Connected — {health.get('cost_models_count', 0) + health.get('charge_models_count', 0)} models loaded")
-            except Exception:
+            else:
                 st.error("Backend unreachable (may be cold-starting, wait ~30s)")
 
             st.divider()
@@ -547,7 +561,6 @@ def main():
     patient = st.session_state.get("patient_data", {})
 
     if app_mode == "Patient Evaluation":
-        pass # Used to be tab1
         # ── Patient Input Form ────────────────────────────────────────────────────
         st.markdown('<div class="section-title">📋 Patient Information</div>', unsafe_allow_html=True)
         st.caption("Edit any field below or click **Randomize Patient** in the sidebar to load test data")
