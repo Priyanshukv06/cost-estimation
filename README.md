@@ -105,22 +105,66 @@ Each estimation target (cost and charge) uses 4 specialized models working toget
 
 ### Hybrid Feature Engineering Pipeline
 
-```
-Raw Patient Data
-       |
-       +---> V1 Pipeline (feature_engineer -> regressor) ---> pred_v1
-       |          |
-       |          +-> Target-encoded features (MEDIAN_COST, DIH)
-       |
-       +---> V2 Pipeline (feature_engineer -> regressor) ---> pred_v2
-       |          |
-       |          +-> Ordinal + target-encoded features
-       |
-       +---> Hybrid Features = [V2_features + V1_target_enc + pred_v1 + pred_v2 + pred_diff]
-                    |
-                    +---> Risk Classifier (Under) ---> P(under-prediction)
-                    |
-                    +---> Risk Classifier (Over)  ---> P(over-prediction)
+```mermaid
+flowchart TD
+    %% Theme Styling
+    classDef inputStyle fill:#1e222d,stroke:#6C5CE7,stroke-width:2px,color:#ffffff;
+    classDef pipeStyle fill:#262a36,stroke:#fdcb6e,stroke-width:1.5px,color:#ffffff;
+    classDef modelStyle fill:#262a36,stroke:#ff7675,stroke-width:1.5px,color:#ffffff;
+    classDef hybridStyle fill:#1e222d,stroke:#00cec9,stroke-width:2px,color:#ffffff;
+    classDef riskStyle fill:#262a36,stroke:#00b894,stroke-width:1.5px,color:#ffffff;
+    classDef outStyle fill:#1e222d,stroke:#74b9ff,stroke-width:2px,color:#ffffff;
+
+    %% Input
+    RawData["Raw Patient Data<br/>(17 Admission Parameters)"]
+
+    %% Parallel Pipeline Branches
+    subgraph V1Branch["V1 Historical Pipeline"]
+        FE_V1["V1 Feature Engineer<br/>• Ordinal Encoders<br/>• Target Encoding (MEDIAN_COST & DIH)"]
+        M1["V1 Regressor<br/>(History Model)"]
+    end
+
+    subgraph V2Branch["V2 Specialist Pipeline"]
+        FE_V2["V2 Feature Engineer<br/>• Ordinal Encoders<br/>• Target Encoding (Clean Subsets)"]
+        M2["V2 Regressor<br/>(Specialist Model)"]
+    end
+
+    %% Hybrid Assembly
+    HybridVec["Hybrid Feature Vector<br/>[ V2 Features + V1 Historical Encodings + pred_v1 + pred_v2 + (pred_v1 - pred_v2) ]"]
+
+    %% Dual Risk Classifiers
+    subgraph RiskBranch["Dual Risk Classification Engine"]
+        RC_Under["Under-Prediction Risk Classifier<br/>(HistGradientBoostingClassifier)"]
+        RC_Over["Over-Prediction Risk Classifier<br/>(HistGradientBoostingClassifier)"]
+    end
+
+    %% Outputs
+    P_Under["Probability of Under-Prediction<br/><code>P(under) >= Threshold</code>"]
+    P_Over["Probability of Over-Prediction<br/><code>P(over) >= Threshold</code>"]
+    V2_Pred["Primary Final Prediction<br/><code>pred_v2</code>"]
+
+    %% Flow Connections
+    RawData --> FE_V1 & FE_V2
+    FE_V1 --> M1
+    FE_V2 --> M2
+
+    FE_V1 -->|"Historical Aggregates"| HybridVec
+    FE_V2 -->|"Clean Features"| HybridVec
+    M1 -->|"pred_v1"| HybridVec
+    M2 -->|"pred_v2"| HybridVec
+
+    HybridVec --> RC_Under & RC_Over
+    RC_Under --> P_Under
+    RC_Over --> P_Over
+    M2 --> V2_Pred
+
+    %% Apply Classes
+    class RawData inputStyle;
+    class FE_V1,FE_V2 pipeStyle;
+    class M1,M2 modelStyle;
+    class HybridVec hybridStyle;
+    class RC_Under,RC_Over riskStyle;
+    class P_Under,P_Over,V2_Pred outStyle;
 ```
 
 ### Configurable Risk Filtering
